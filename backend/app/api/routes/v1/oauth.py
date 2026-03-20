@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
 from app.database import DbSession
-from app.integrations.celery.tasks import start_garmin_full_backfill, sync_vendor_data
+from app.integrations.celery.tasks import historical_backfill, start_garmin_full_backfill, sync_vendor_data
 from app.schemas import (
     AuthorizationURLResponse,
     BulkProviderSettingsUpdate,
@@ -95,6 +95,13 @@ def oauth_callback(
     # For Garmin: Auto-trigger 30-day backfill for all backfill data types
     if provider == ProviderName.GARMIN:
         start_garmin_full_backfill.delay(str(oauth_state.user_id))
+
+    # For all OAuth providers: Auto-trigger full historical backfill (3 years, month by month)
+    # This runs in the background and respects rate limits automatically
+    historical_backfill.delay(
+        user_id=str(oauth_state.user_id),
+        provider=provider.value,
+    )
 
     # If a specific redirect_uri was requested (e.g. by frontend), redirect there
     if oauth_state.redirect_uri:

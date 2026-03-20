@@ -1,4 +1,5 @@
 from .archival_task import run_daily_archival
+from .historical_backfill_task import historical_backfill
 from .finalize_stale_sleep_task import finalize_stale_sleeps
 from .garmin_backfill_task import (
     BACKFILL_DATA_TYPES as GARMIN_BACKFILL_DATA_TYPES,
@@ -64,6 +65,8 @@ __all__ = [
     "acquire_garmin_backfill_lock",
     "release_garmin_backfill_lock",
     "gc_stuck_backfills",
+    # Historical backfill (triggers on first connect)
+    "historical_backfill",
     # Archival
     "run_daily_archival",
     # Other tasks
