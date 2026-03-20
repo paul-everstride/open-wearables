@@ -1,4 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
 import {
   healthService,
   type WorkoutsParams,
@@ -116,6 +117,56 @@ export function useBodySummary(userId: string, params?: BodySummaryParams) {
     queryFn: () => healthService.getBodySummary(userId, params),
     enabled: !!userId,
   });
+}
+
+/**
+ * Fetch ALL pages of timeseries data automatically.
+ *
+ * The timeseries endpoint returns at most 100 items per page. This hook
+ * uses React Query's infinite query under the hood and keeps fetching
+ * until every page has been retrieved — giving you the full dataset in
+ * one flat array.
+ *
+ * Safe to call for any date range; calls go to our local backend
+ * (PostgreSQL), so there are no external rate-limit concerns.
+ */
+export function useAllTimeSeries(
+  userId: string,
+  params: Omit<TimeSeriesParams, 'cursor' | 'limit'>
+) {
+  const query = useInfiniteQuery({
+    queryKey: [...queryKeys.health.timeseries(userId, params), 'all-pages'],
+    queryFn: ({ pageParam }) =>
+      healthService.getTimeSeries(userId, {
+        ...params,
+        cursor: (pageParam as string | undefined) ?? undefined,
+        limit: 100,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.has_more
+        ? (lastPage.pagination.next_cursor ?? undefined)
+        : undefined,
+    enabled: !!userId && !!params.start_time && !!params.end_time,
+  });
+
+  // Auto-trigger the next page as soon as the previous one lands
+  useEffect(() => {
+    if (query.hasNextPage && !query.isFetchingNextPage) {
+      void query.fetchNextPage();
+    }
+  }, [query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage]);
+
+  const allData = useMemo(
+    () => query.data?.pages.flatMap((p) => p.data) ?? [],
+    [query.data]
+  );
+
+  return {
+    data: allData,
+    isLoading:
+      query.isLoading || query.hasNextPage === true || query.isFetchingNextPage,
+  };
 }
 
 /**

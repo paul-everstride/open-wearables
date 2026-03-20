@@ -14,6 +14,8 @@ import {
   Scale,
   Smartphone,
   Copy,
+  HeartPulse,
+  ExternalLink,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -22,6 +24,7 @@ import {
   useAppleXmlUpload,
   useGenerateInvitationCode,
 } from '@/hooks/api/use-users';
+import { oauthService } from '@/lib/api/services/oauth.service';
 import { ROUTES } from '@/lib/constants/routes';
 import { API_CONFIG } from '@/lib/api/config';
 import { copyToClipboard } from '@/lib/utils/clipboard';
@@ -31,6 +34,7 @@ import { SleepSection } from '@/components/user/sleep-section';
 import { ActivitySection } from '@/components/user/activity-section';
 import { BodySection } from '@/components/user/body-section';
 import { WorkoutSection } from '@/components/user/workout-section';
+import { RecoverySection } from '@/components/user/recovery-section';
 import type { DateRangeValue } from '@/components/ui/date-range-selector';
 import {
   AlertDialog,
@@ -83,6 +87,8 @@ function UserDetailPage() {
   const [activityDateRange, setActivityDateRange] =
     useState<DateRangeValue>(30);
   const [sleepDateRange, setSleepDateRange] = useState<DateRangeValue>(30);
+  const [recoveryDateRange, setRecoveryDateRange] =
+    useState<DateRangeValue>(0); // default to All — data is historical (2024-2025)
 
   const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser();
   const { handleUpload, isUploading: isUploadingFile } = useAppleXmlUpload();
@@ -95,6 +101,10 @@ function UserDetailPage() {
   const [codeCopied, setCodeCopied] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
+  const [whoopLink, setWhoopLink] = useState<string | null>(null);
+  const [isWhoopDialogOpen, setIsWhoopDialogOpen] = useState(false);
+  const [whoopLinkCopied, setWhoopLinkCopied] = useState(false);
+  const [isGeneratingWhoopLink, setIsGeneratingWhoopLink] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isUploading = isUploadingFile(userId);
@@ -145,13 +155,25 @@ function UserDetailPage() {
         ),
       },
       {
+        id: 'recovery',
+        label: 'Recovery',
+        icon: HeartPulse,
+        content: (
+          <RecoverySection
+            userId={userId}
+            dateRange={recoveryDateRange}
+            onDateRangeChange={setRecoveryDateRange}
+          />
+        ),
+      },
+      {
         id: 'body',
         label: 'Body',
         icon: Scale,
         content: <BodySection userId={userId} />,
       },
     ],
-    [userId, workoutDateRange, activityDateRange, sleepDateRange]
+    [userId, workoutDateRange, activityDateRange, sleepDateRange, recoveryDateRange]
   );
 
   const handleCopyPairLink = async () => {
@@ -184,6 +206,19 @@ function UserDetailPage() {
         setIsCodeDialogOpen(true);
       },
     });
+  };
+
+  const handleGenerateWhoopLink = async () => {
+    setIsGeneratingWhoopLink(true);
+    try {
+      const result = await oauthService.getWhoopAuthorizeUrl(userId);
+      setWhoopLink(result.authorization_url);
+      setIsWhoopDialogOpen(true);
+    } catch {
+      // silently fail — button will just stop spinning
+    } finally {
+      setIsGeneratingWhoopLink(false);
+    }
   };
 
   const handleCopyCode = async () => {
@@ -279,6 +314,23 @@ function UserDetailPage() {
               </>
             )}
           </Button>
+          <Button
+            variant="secondary"
+            onClick={handleGenerateWhoopLink}
+            disabled={isGeneratingWhoopLink}
+          >
+            {isGeneratingWhoopLink ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <LinkIcon className="h-4 w-4" />
+                Connect WHOOP
+              </>
+            )}
+          </Button>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -345,6 +397,63 @@ function UserDetailPage() {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* WHOOP Connection Link Dialog */}
+      <Dialog
+        open={isWhoopDialogOpen}
+        onOpenChange={(open) => {
+          setIsWhoopDialogOpen(open);
+          if (!open) setWhoopLinkCopied(false);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>WHOOP Connection Link</DialogTitle>
+            <DialogDescription>
+              Send this link to your athlete. When they click it, they'll log
+              into WHOOP and their data will start syncing automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label className="text-zinc-300">Connection Link</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={whoopLink || ''}
+                className="bg-zinc-800 border-zinc-700 font-mono text-xs"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={async () => {
+                  if (!whoopLink) return;
+                  await navigator.clipboard.writeText(whoopLink);
+                  setWhoopLinkCopied(true);
+                  setTimeout(() => setWhoopLinkCopied(false), 2000);
+                }}
+              >
+                {whoopLinkCopied ? (
+                  <Check className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => whoopLink && window.open(whoopLink, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-[11px] text-zinc-500">
+              Links expire after use. Generate a new one if needed.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Invitation Code Dialog */}
       <Dialog open={isCodeDialogOpen} onOpenChange={setIsCodeDialogOpen}>

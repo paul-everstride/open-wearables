@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 
-export type DateRangeValue = 7 | 30 | 90 | 365;
+// 0 is a special sentinel meaning "all time"
+export type DateRangeValue = 7 | 30 | 90 | 365 | 0;
 
 interface DateRangeSelectorProps {
   value: DateRangeValue;
@@ -8,13 +9,19 @@ interface DateRangeSelectorProps {
   className?: string;
 }
 
+const RANGE_OPTIONS: { value: DateRangeValue; label: string }[] = [
+  { value: 7, label: '7d' },
+  { value: 30, label: '30d' },
+  { value: 90, label: '90d' },
+  { value: 365, label: '365d' },
+  { value: 0, label: 'All' },
+];
+
 export function DateRangeSelector({
   value,
   onChange,
   className,
 }: DateRangeSelectorProps) {
-  const ranges: DateRangeValue[] = [7, 30, 90, 365];
-
   return (
     <div
       className={cn(
@@ -22,18 +29,18 @@ export function DateRangeSelector({
         className
       )}
     >
-      {ranges.map((days) => (
+      {RANGE_OPTIONS.map((opt) => (
         <button
-          key={days}
-          onClick={() => onChange(days)}
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
           className={cn(
             'px-2 py-1 text-xs font-medium rounded-md transition-colors',
-            value === days
+            value === opt.value
               ? 'bg-zinc-700 text-white'
               : 'text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800'
           )}
         >
-          {days}d
+          {opt.label}
         </button>
       ))}
     </div>

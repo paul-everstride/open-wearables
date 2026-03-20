@@ -43,6 +43,14 @@ export function useDateRange(dateRange: DateRangeValue): DateRange {
     // End date: start of tomorrow UTC (exclusive, for half-open interval)
     const end = toUTCMidnight(addDays(today, 1));
 
+    // 0 is the "all time" sentinel — start from a very old date
+    if (dateRange === 0) {
+      return {
+        startDate: '2000-01-01T00:00:00.000Z',
+        endDate: end.toISOString(),
+      };
+    }
+
     // Start date: start of day N days ago in UTC
     const start = toUTCMidnight(subDays(today, dateRange));
 

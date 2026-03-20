@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useCallback } from 'react';
-import { Plus, Users as UsersIcon } from 'lucide-react';
+import { Plus, Users as UsersIcon, Copy, Check, ExternalLink } from 'lucide-react';
 import { useUsers, useDeleteUser, useCreateUser } from '@/hooks/api/use-users';
 import type { UserCreate, UserQueryParams } from '@/lib/api/types';
 import { UsersTable } from '@/components/users/users-table';
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { oauthService } from '@/lib/api/services/oauth.service';
 
 const initialFormState: UserCreate = {
   external_user_id: '',
@@ -34,6 +35,8 @@ function UsersPage() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [formData, setFormData] = useState<UserCreate>(initialFormState);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [whoopLink, setWhoopLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [queryParams, setQueryParams] = useState<UserQueryParams>({
     page: 1,
     limit: DEFAULT_PAGE_SIZE,
@@ -84,10 +87,16 @@ function UsersPage() {
     };
 
     createUser.mutate(payload, {
-      onSuccess: () => {
-        setIsCreateDialogOpen(false);
+      onSuccess: async (newUser) => {
         setFormData(initialFormState);
         setFormErrors({});
+        // Auto-generate WHOOP link for the new user
+        try {
+          const result = await oauthService.getWhoopAuthorizeUrl(newUser.id);
+          setWhoopLink(result.authorization_url);
+        } catch {
+          setWhoopLink(null);
+        }
       },
     });
   };
@@ -96,6 +105,8 @@ function UsersPage() {
     setIsCreateDialogOpen(false);
     setFormData(initialFormState);
     setFormErrors({});
+    setWhoopLink(null);
+    setLinkCopied(false);
   };
 
   const handleDeleteUser = () => {
@@ -201,110 +212,171 @@ function UsersPage() {
         }}
       >
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
-            <DialogDescription>
-              Create a new user to connect wearable devices and collect health
-              data.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="external_user_id" className="text-zinc-300">
-                External User ID
-              </Label>
-              <Input
-                id="external_user_id"
-                type="text"
-                placeholder="e.g., user_12345 or external system ID"
-                value={formData.external_user_id || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    external_user_id: e.target.value,
-                  })
-                }
-                maxLength={255}
-                className="bg-zinc-800 border-zinc-700"
-              />
-              {formErrors.external_user_id && (
-                <p className="text-xs text-red-500">
-                  {formErrors.external_user_id}
+          {whoopLink ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>User Created!</DialogTitle>
+                <DialogDescription>
+                  Send this WHOOP connection link to your athlete. When they
+                  click it, they'll log into WHOOP and their data will start
+                  syncing automatically.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <Label className="text-zinc-300">WHOOP Connection Link</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={whoopLink}
+                    className="bg-zinc-800 border-zinc-700 font-mono text-xs"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(whoopLink);
+                      setLinkCopied(true);
+                      setTimeout(() => setLinkCopied(false), 2000);
+                    }}
+                  >
+                    {linkCopied ? (
+                      <Check className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => window.open(whoopLink, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-[11px] text-zinc-500">
+                  Once the athlete connects, historical data will be fetched
+                  automatically.
                 </p>
-              )}
-              <p className="text-[10px] text-zinc-600">
-                Your unique identifier for this user (max 255 characters)
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="first_name" className="text-zinc-300">
-                  First Name
-                </Label>
-                <Input
-                  id="first_name"
-                  type="text"
-                  placeholder="John"
-                  value={formData.first_name || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, first_name: e.target.value })
-                  }
-                  maxLength={100}
-                  className="bg-zinc-800 border-zinc-700"
-                />
-                {formErrors.first_name && (
-                  <p className="text-xs text-red-500">
-                    {formErrors.first_name}
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCloseCreateDialog}>Done</Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Create New User</DialogTitle>
+                <DialogDescription>
+                  Create a new user to connect wearable devices and collect
+                  health data.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="external_user_id" className="text-zinc-300">
+                    External User ID
+                  </Label>
+                  <Input
+                    id="external_user_id"
+                    type="text"
+                    placeholder="e.g., user_12345 or external system ID"
+                    value={formData.external_user_id || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        external_user_id: e.target.value,
+                      })
+                    }
+                    maxLength={255}
+                    className="bg-zinc-800 border-zinc-700"
+                  />
+                  {formErrors.external_user_id && (
+                    <p className="text-xs text-red-500">
+                      {formErrors.external_user_id}
+                    </p>
+                  )}
+                  <p className="text-[10px] text-zinc-600">
+                    Your unique identifier for this user (max 255 characters)
                   </p>
-                )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="first_name" className="text-zinc-300">
+                      First Name
+                    </Label>
+                    <Input
+                      id="first_name"
+                      type="text"
+                      placeholder="John"
+                      value={formData.first_name || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, first_name: e.target.value })
+                      }
+                      maxLength={100}
+                      className="bg-zinc-800 border-zinc-700"
+                    />
+                    {formErrors.first_name && (
+                      <p className="text-xs text-red-500">
+                        {formErrors.first_name}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="last_name" className="text-zinc-300">
+                      Last Name
+                    </Label>
+                    <Input
+                      id="last_name"
+                      type="text"
+                      placeholder="Doe"
+                      value={formData.last_name || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, last_name: e.target.value })
+                      }
+                      maxLength={100}
+                      className="bg-zinc-800 border-zinc-700"
+                    />
+                    {formErrors.last_name && (
+                      <p className="text-xs text-red-500">
+                        {formErrors.last_name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-zinc-300">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="john.doe@example.com"
+                    value={formData.email || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    className="bg-zinc-800 border-zinc-700"
+                  />
+                  {formErrors.email && (
+                    <p className="text-xs text-red-500">{formErrors.email}</p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="last_name" className="text-zinc-300">
-                  Last Name
-                </Label>
-                <Input
-                  id="last_name"
-                  type="text"
-                  placeholder="Doe"
-                  value={formData.last_name || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, last_name: e.target.value })
-                  }
-                  maxLength={100}
-                  className="bg-zinc-800 border-zinc-700"
-                />
-                {formErrors.last_name && (
-                  <p className="text-xs text-red-500">{formErrors.last_name}</p>
-                )}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-zinc-300">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john.doe@example.com"
-                value={formData.email || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="bg-zinc-800 border-zinc-700"
-              />
-              {formErrors.email && (
-                <p className="text-xs text-red-500">{formErrors.email}</p>
-              )}
-            </div>
-          </div>
-          <DialogFooter className="gap-3">
-            <Button variant="outline" onClick={handleCloseCreateDialog}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateUser} disabled={createUser.isPending}>
-              {createUser.isPending ? 'Creating...' : 'Create User'}
-            </Button>
-          </DialogFooter>
+              <DialogFooter className="gap-3">
+                <Button variant="outline" onClick={handleCloseCreateDialog}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateUser}
+                  disabled={createUser.isPending}
+                >
+                  {createUser.isPending ? 'Creating...' : 'Create User'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

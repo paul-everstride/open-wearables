@@ -2,6 +2,11 @@ import { apiClient } from '../client';
 import { API_ENDPOINTS } from '../config';
 import type { Provider } from '../types';
 
+export interface AuthorizeUrlResponse {
+  authorization_url: string;
+  state: string;
+}
+
 /**
  * Update payload for OAuth provider settings.
  * Maps provider identifiers to their enabled/disabled state.
@@ -49,6 +54,17 @@ export const oauthService = {
     return apiClient.put<{ providers: Provider[] }>(
       API_ENDPOINTS.oauthProviders,
       data
+    );
+  },
+
+  /**
+   * Generate a WHOOP OAuth authorization URL for a user.
+   * Send this link to the athlete — when they click it they log into WHOOP
+   * and their data starts flowing in automatically.
+   */
+  async getWhoopAuthorizeUrl(userId: string): Promise<AuthorizeUrlResponse> {
+    return apiClient.get<AuthorizeUrlResponse>(
+      `${API_ENDPOINTS.oauthAuthorize('whoop')}?user_id=${userId}`
     );
   },
 };
