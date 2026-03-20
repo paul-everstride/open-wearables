@@ -31,6 +31,7 @@ from app.schemas.summaries import (
     BodySummary,
     HeartRateStats,
     IntensityMinutes,
+    RecoverySummary,
     SleepStagesSummary,
     SleepSummary,
 )
@@ -341,6 +342,81 @@ class SummariesService:
                 avg_hrv_sdnn_ms=None,
                 avg_respiratory_rate=None,
                 avg_spo2_percent=None,
+            )
+            data.append(summary)
+
+        return PaginatedResponse(
+            data=data,
+            pagination=Pagination(
+                has_more=has_more,
+                next_cursor=next_cursor,
+                previous_cursor=previous_cursor,
+            ),
+            metadata=TimeseriesMetadata(
+                sample_count=len(data),
+                start_time=start_date,
+                end_time=end_date,
+            ),
+        )
+
+    @handle_exceptions
+    def get_recovery_summaries(
+        self,
+        db_session: DbSession,
+        user_id: UUID,
+        start_date: datetime,
+        end_date: datetime,
+        cursor: str | None,
+        limit: int,
+    ) -> PaginatedResponse[RecoverySummary]:
+        """Get daily recovery summaries: recovery score, HRV, resting HR, SpO2."""
+        self.logger.debug(f"Fetching recovery summaries for user {user_id} from {start_date} to {end_date}")
+
+        results = self.data_point_repo.get_daily_recovery_aggregates(
+            db_session, user_id, start_date, end_date
+        )
+
+        # Filter to best source per date
+        results = self._filter_by_priority(db_session, user_id, results, date_key="recovery_date")
+
+        has_more = len(results) > limit
+        if has_more:
+            results = results[:limit]
+
+        next_cursor: str | None = None
+        previous_cursor: str | None = None
+
+        if results:
+            last_result = results[-1]
+            last_date = last_result["recovery_date"]
+            last_date_midnight = datetime.combine(last_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+            if has_more:
+                next_cursor = encode_cursor(last_date_midnight, last_result.get("source", ""), "next")
+            if cursor:
+                first_result = results[0]
+                first_date = first_result["recovery_date"]
+                first_date_midnight = datetime.combine(first_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+                previous_cursor = encode_cursor(first_date_midnight, first_result.get("source", ""), "prev")
+
+        data = []
+        for result in results:
+            recovery_score = result.get("recovery_score_avg")
+            rhr = result.get("resting_heart_rate_avg")
+            hrv = result.get("hrv_sdnn_avg") or result.get("hrv_rmssd_avg")
+            spo2 = result.get("spo2_avg")
+
+            summary = RecoverySummary(
+                date=result["recovery_date"],
+                source=SourceMetadata(
+                    provider=result.get("source") or "unknown",
+                    device=result.get("device_model"),
+                ),
+                recovery_score=round(recovery_score) if recovery_score is not None else None,
+                resting_heart_rate_bpm=round(rhr) if rhr is not None else None,
+                avg_hrv_sdnn_ms=round(hrv, 1) if hrv is not None else None,
+                avg_spo2_percent=round(spo2, 1) if spo2 is not None else None,
+                sleep_duration_seconds=None,
+                sleep_efficiency_percent=None,
             )
             data.append(summary)
 

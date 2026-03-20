@@ -66,8 +66,12 @@ def get_recovery_summary(
     cursor: str | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> PaginatedResponse[RecoverySummary]:
-    """Returns daily recovery metrics (Sleep + HRV + RHR)."""
-    raise HTTPException(status_code=501, detail="Not implemented")
+    """Returns daily recovery metrics (recovery score, HRV, resting HR, SpO2)."""
+    start_datetime = parse_query_datetime(start_date)
+    end_datetime = parse_query_datetime(end_date)
+    return summaries_service.get_recovery_summaries(
+        db, user_id, start_datetime, end_datetime, cursor, limit
+    )
 
 
 @router.get("/users/{user_id}/summaries/body")

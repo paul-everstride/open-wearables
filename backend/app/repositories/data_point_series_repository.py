@@ -499,6 +499,81 @@ class DataPointSeriesRepository(
             )
         return aggregates
 
+    def get_daily_recovery_aggregates(
+        self,
+        db_session: DbSession,
+        user_id: UUID,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> list[dict]:
+        """Get daily recovery aggregates: recovery score, resting HR, HRV, SpO2.
+
+        Returns list of dicts with keys:
+        - recovery_date, source, device_model
+        - recovery_score_avg, resting_heart_rate_avg
+        - hrv_sdnn_avg, hrv_rmssd_avg, spo2_avg
+        """
+        recovery_id = get_series_type_id(SeriesType.recovery_score)
+        rhr_id = get_series_type_id(SeriesType.resting_heart_rate)
+        hrv_sdnn_id = get_series_type_id(SeriesType.heart_rate_variability_sdnn)
+        hrv_rmssd_id = get_series_type_id(SeriesType.heart_rate_variability_rmssd)
+        spo2_id = get_series_type_id(SeriesType.oxygen_saturation)
+
+        all_type_ids = [recovery_id, rhr_id, hrv_sdnn_id, hrv_rmssd_id, spo2_id]
+
+        results = (
+            db_session.query(
+                cast(self.model.recorded_at, Date).label("recovery_date"),
+                DataSource.source.label("source"),
+                DataSource.device_model.label("device_model"),
+                func.avg(
+                    case((self.model.series_type_definition_id == recovery_id, self.model.value), else_=None)
+                ).label("recovery_score_avg"),
+                func.avg(
+                    case((self.model.series_type_definition_id == rhr_id, self.model.value), else_=None)
+                ).label("resting_heart_rate_avg"),
+                func.avg(
+                    case((self.model.series_type_definition_id == hrv_sdnn_id, self.model.value), else_=None)
+                ).label("hrv_sdnn_avg"),
+                func.avg(
+                    case((self.model.series_type_definition_id == hrv_rmssd_id, self.model.value), else_=None)
+                ).label("hrv_rmssd_avg"),
+                func.avg(
+                    case((self.model.series_type_definition_id == spo2_id, self.model.value), else_=None)
+                ).label("spo2_avg"),
+            )
+            .join(DataSource, self.model.data_source_id == DataSource.id)
+            .filter(
+                DataSource.user_id == user_id,
+                self.model.recorded_at >= start_date,
+                cast(self.model.recorded_at, Date) < cast(end_date, Date),
+                self.model.series_type_definition_id.in_(all_type_ids),
+            )
+            .group_by(
+                cast(self.model.recorded_at, Date),
+                DataSource.source,
+                DataSource.device_model,
+            )
+            .order_by(asc(cast(self.model.recorded_at, Date)))
+            .all()
+        )
+
+        aggregates = []
+        for row in results:
+            aggregates.append(
+                {
+                    "recovery_date": row.recovery_date,
+                    "source": row.source,
+                    "device_model": row.device_model,
+                    "recovery_score_avg": float(row.recovery_score_avg) if row.recovery_score_avg is not None else None,
+                    "resting_heart_rate_avg": float(row.resting_heart_rate_avg) if row.resting_heart_rate_avg is not None else None,
+                    "hrv_sdnn_avg": float(row.hrv_sdnn_avg) if row.hrv_sdnn_avg is not None else None,
+                    "hrv_rmssd_avg": float(row.hrv_rmssd_avg) if row.hrv_rmssd_avg is not None else None,
+                    "spo2_avg": float(row.spo2_avg) if row.spo2_avg is not None else None,
+                }
+            )
+        return aggregates
+
     def get_daily_active_minutes(
         self,
         db_session: DbSession,
