@@ -1,6 +1,6 @@
 """add_teams
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: c9e1f2a3b4d5
 Revises: f99ae82f0470
 Branch Labels: None
 Depends On: None
@@ -12,7 +12,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "a1b2c3d4e5f6"
+revision: str = "c9e1f2a3b4d5"
 down_revision: Union[str, None] = "f99ae82f0470"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
