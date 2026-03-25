@@ -46,6 +46,14 @@ def add_team_member(team_id: UUID, user_id: UUID, db: DbSession, _api_key: ApiKe
     return {"status": "ok"}
 
 
+@router.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_team(team_id: UUID, db: DbSession, _api_key: ApiKeyDep):
+    team = team_service.get_team(db, team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    team_service.delete_team(db, team_id)
+
+
 @router.delete("/teams/{team_id}/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_team_member(team_id: UUID, user_id: UUID, db: DbSession, _api_key: ApiKeyDep):
     removed = team_service.remove_member(db, team_id, user_id)

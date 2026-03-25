@@ -60,6 +60,13 @@ def add_member(db: Session, team_id: UUID, user_id: UUID) -> UserTeam | None:
     return assoc
 
 
+def delete_team(db: Session, team_id: UUID) -> None:
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if team:
+        db.delete(team)
+        db.commit()
+
+
 def remove_member(db: Session, team_id: UUID, user_id: UUID) -> bool:
     assoc = (
         db.query(UserTeam)
