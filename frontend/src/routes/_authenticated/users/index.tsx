@@ -133,7 +133,7 @@ function UsersPage() {
     return (
       <div className="p-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-medium text-white">Users</h1>
+          <h1 className="text-2xl font-medium text-white">Athletes</h1>
           <p className="text-sm text-zinc-500 mt-1">
             Manage your platform users
           </p>
@@ -173,7 +173,7 @@ function UsersPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-medium text-white">Users</h1>
+          <h1 className="text-2xl font-medium text-white">Athletes</h1>
           <p className="text-sm text-zinc-500 mt-1">
             Manage your platform users and their wearable connections
           </p>

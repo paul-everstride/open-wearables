@@ -22,7 +22,7 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: 'Users',
+    title: 'Athletes',
     url: ROUTES.users,
     icon: Users,
   },
