@@ -32,11 +32,18 @@ function PairSuccessPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 flex flex-col items-center justify-center p-6 relative overflow-hidden selection:bg-emerald-500/20">
-      {/* Ambient Background Effect */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(16,185,129,0.15),rgba(255,255,255,0))] pointer-events-none" />
+    <div className="min-h-screen bg-white">
+      {/* Top bar */}
+      <div className="border-b border-slate-200 bg-white px-6 py-4">
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <span className="text-base font-semibold text-slate-900 tracking-tight">Everstride</span>
+          <span className="text-slate-300">·</span>
+          <span className="text-sm text-slate-500">Athlete Setup</span>
+        </div>
+      </div>
 
-      <div className="relative z-10 w-full max-w-md flex flex-col items-center">
+      {/* Content */}
+      <div className="max-w-md mx-auto px-6 pt-16 pb-12 flex flex-col items-center">
         {/* Success Icon */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -44,10 +51,9 @@ function PairSuccessPage() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="mb-8 relative"
         >
-          <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full" />
-          <div className="relative flex items-center justify-center h-24 w-24 bg-zinc-900 border border-zinc-800 rounded-full shadow-2xl">
-            <div className="absolute inset-0 rounded-full border border-emerald-500/30 animate-[pulse-ring_2s_cubic-bezier(0.24,0,0.38,1)_infinite]" />
-            <Check className="w-10 h-10 text-emerald-400 stroke-[2.5]" />
+          <div className="relative flex items-center justify-center h-24 w-24 bg-white border border-slate-200 rounded-full shadow-sm">
+            <div className="absolute inset-0 rounded-full border border-emerald-200 animate-[pulse-ring_2s_cubic-bezier(0.24,0,0.38,1)_infinite]" />
+            <Check className="w-10 h-10 text-emerald-500 stroke-[2.5]" />
           </div>
         </motion.div>
 
@@ -56,12 +62,12 @@ function PairSuccessPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-          className="text-center space-y-3 mb-10"
+          className="text-center space-y-3 mb-10 w-full"
         >
-          <h1 className="text-3xl font-medium text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
             Successfully connected
           </h1>
-          <p className="text-lg text-zinc-400 leading-relaxed">
+          <p className="text-base text-slate-500 leading-relaxed">
             {provider
               ? `Your ${provider.name} device is now linked and syncing data.`
               : 'Your device is now linked and syncing data.'}
@@ -74,9 +80,9 @@ function PairSuccessPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-            className="w-full bg-zinc-900/40 border border-white/10 rounded-2xl p-5 mb-8 flex items-center gap-4"
+            className="w-full bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-8 flex items-center gap-4"
           >
-            <div className="flex items-center justify-center h-12 w-12 bg-white rounded-xl shadow-lg shadow-black/20">
+            <div className="flex items-center justify-center h-12 w-12 bg-slate-100 rounded-xl shrink-0">
               <img
                 src={
                   provider.icon_url
@@ -88,15 +94,15 @@ function PairSuccessPage() {
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-base font-medium text-white">
+              <span className="text-sm font-medium text-slate-900">
                 {provider.name}
               </span>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                <span className="text-sm text-zinc-500">Active</span>
+                <span className="text-xs text-slate-500">Active</span>
               </div>
             </div>
           </motion.div>
@@ -107,12 +113,12 @@ function PairSuccessPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-          className="w-full space-y-4"
+          className="w-full space-y-3"
         >
           {redirectUrl && (
             <a
               href={redirectUrl}
-              className="w-full py-3.5 px-4 bg-white hover:bg-zinc-200 text-zinc-950 text-base font-medium rounded-xl transition-all duration-200 focus:ring-2 focus:ring-white/20 outline-none flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               Back to the app
               <ExternalLink className="w-4 h-4 stroke-[1.5]" />
@@ -121,10 +127,10 @@ function PairSuccessPage() {
 
           <a
             href={`/users/${userId}/pair${redirectUrl ? `?redirect_url=${encodeURIComponent(redirectUrl)}` : ''}`}
-            className={`w-full py-3.5 px-4 text-base font-medium rounded-xl transition-all duration-200 outline-none flex items-center justify-center gap-2 ${
+            className={`w-full py-3 px-4 text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-2 ${
               redirectUrl
-                ? 'bg-transparent border border-white/5 hover:bg-white/5 text-zinc-400 hover:text-white'
-                : 'bg-white hover:bg-zinc-200 text-zinc-950'
+                ? 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                : 'bg-slate-900 hover:bg-slate-700 text-white'
             }`}
           >
             Connect another device
@@ -138,7 +144,7 @@ function PairSuccessPage() {
         @keyframes pulse-ring {
           0% {
             transform: scale(0.8);
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
           }
           70% {
             transform: scale(1);

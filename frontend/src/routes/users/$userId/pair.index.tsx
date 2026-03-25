@@ -69,22 +69,25 @@ function PairWearablePage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 flex flex-col items-center justify-center p-6 relative overflow-hidden selection:bg-white/20">
-      {/* Ambient Background Effect */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.1),rgba(255,255,255,0))] pointer-events-none" />
+    <div className="min-h-screen bg-white">
+      {/* Top bar */}
+      <div className="border-b border-slate-200 bg-white px-6 py-4">
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <span className="text-base font-semibold text-slate-900 tracking-tight">Everstride</span>
+          <span className="text-slate-300">·</span>
+          <span className="text-sm text-slate-500">Athlete Setup</span>
+        </div>
+      </div>
 
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative z-10 text-center mb-14 space-y-3"
-      >
-        <h1 className="text-4xl font-medium text-white tracking-tight">
-          Connect a device
+      {/* Hero intro */}
+      <div className="max-w-xl mx-auto px-6 pt-10 pb-6">
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mb-2">
+          Connect your device
         </h1>
-        <p className="text-lg text-zinc-400">Select your wearable platform</p>
-      </motion.div>
+        <p className="text-sm text-slate-500 leading-relaxed">
+          Choose your wearable below to start syncing your recovery, sleep, and readiness data with your coach. This only takes a minute.
+        </p>
+      </div>
 
       {/* Error notification */}
       <AnimatePresence>
@@ -93,158 +96,158 @@ function PairWearablePage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="relative z-10 mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 max-w-4xl w-full"
+            className="max-w-xl mx-auto px-6 mb-4"
           >
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-            <p className="text-sm text-red-300 flex-1">{error}</p>
-            <Button
-              variant="destructive"
-              size="icon"
-              onClick={reset}
-              aria-label="Dismiss error"
-            >
-              <X className="w-5 h-5" />
-            </Button>
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+              <p className="text-sm text-red-700 flex-1">{error}</p>
+              <Button
+                variant="destructive"
+                size="icon"
+                onClick={reset}
+                aria-label="Dismiss error"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main content */}
-      <AnimatePresence mode="wait">
-        {connectionState === 'idle' && (
-          <motion.div
-            key="providers"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl"
-          >
-            {isLoading ? (
-              <div className="col-span-2 flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
-              </div>
-            ) : (
-              displayProviders
-                .filter((p) => p.isAvailable)
-                .map((provider, index) => (
-                  <motion.button
-                    key={provider.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05, duration: 0.3 }}
-                    onClick={() => handleConnect(provider.id)}
-                    disabled={provider.isConnected}
-                    className={`group relative flex flex-col items-center text-center p-10 rounded-2xl bg-zinc-900/40 border transition-all duration-300 ease-out outline-none focus:ring-2 focus:ring-white/20 ${
-                      provider.isConnected
-                        ? 'border-emerald-500/20 cursor-default'
-                        : 'border-white/5 hover:bg-zinc-900/80 hover:border-white/10'
-                    }`}
-                  >
-                    {/* Brand Logo */}
-                    <div className="mb-8 flex items-center justify-center h-20 w-20 bg-white rounded-2xl shadow-lg shadow-black/20 group-hover:scale-105 transition-transform duration-300">
-                      <img
-                        src={provider.logoPath}
-                        alt={`${provider.name} logo`}
-                        className="w-14 h-14 object-contain"
-                      />
-                    </div>
-
-                    {/* Text */}
-                    <h3 className="text-xl font-medium text-white mb-3">
-                      {provider.name}
-                    </h3>
-                    <p className="text-base text-zinc-500 max-w-xs leading-relaxed">
-                      {provider.description}
-                    </p>
-
-                    {/* Connect indicator */}
-                    <div className="mt-8 flex items-center gap-1.5 text-base font-medium transition-colors">
-                      {provider.isConnected ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-400" />
-                          <span className="text-emerald-400">Connected</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-zinc-200 group-hover:text-white">
-                            Connect
-                          </span>
-                          <ChevronRight className="w-4 h-4 stroke-[1.5] text-zinc-200 group-hover:text-white" />
-                        </>
-                      )}
-                    </div>
-                  </motion.button>
-                ))
-            )}
-          </motion.div>
-        )}
-
-        {connectionState === 'connecting' && connectingProviderData && (
-          <motion.div
-            key="connecting"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            className="relative z-10 text-center py-12"
-          >
-            <div
-              role="status"
-              aria-live="polite"
-              aria-label={`Connecting to ${connectingProviderData.name}`}
-              className="w-12 h-12 mx-auto mb-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
-            />
-            <p className="text-zinc-400">
-              Connecting to {connectingProviderData.name}...
-            </p>
-          </motion.div>
-        )}
-
-        {connectionState === 'success' && (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            className="relative z-10 text-center py-12"
-          >
+      {/* Provider cards */}
+      <div className="max-w-xl mx-auto px-6 pb-12">
+        <AnimatePresence mode="wait">
+          {connectionState === 'idle' && (
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{
-                type: 'spring',
-                stiffness: 200,
-                damping: 12,
-                delay: 0.1,
-              }}
-              className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center shadow-[0_0_30px_hsla(145,100%,50%,0.3)]"
+              key="providers"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="grid grid-cols-1 gap-4"
             >
-              <Check className="w-8 h-8 text-green-500" />
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                </div>
+              ) : (
+                displayProviders
+                  .filter((p) => p.isAvailable)
+                  .map((provider, index) => (
+                    <motion.div
+                      key={provider.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05, duration: 0.3 }}
+                      className={`bg-white border rounded-2xl shadow-sm transition-all duration-200 ${
+                        provider.isConnected
+                          ? 'border-emerald-200'
+                          : 'border-slate-200 hover:shadow-md hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4 p-5">
+                        {/* Provider logo */}
+                        <div className="flex items-center justify-center h-14 w-14 bg-slate-100 rounded-xl shrink-0">
+                          <img
+                            src={provider.logoPath}
+                            alt={`${provider.name} logo`}
+                            className="w-9 h-9 object-contain"
+                          />
+                        </div>
+
+                        {/* Text */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-slate-900 font-medium text-sm">
+                            {provider.name}
+                          </p>
+                          <p className="text-slate-500 text-xs mt-0.5">
+                            {provider.description}
+                          </p>
+                        </div>
+
+                        {/* Action */}
+                        {provider.isConnected ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 text-xs font-medium shrink-0">
+                            <Check className="w-3.5 h-3.5" />
+                            Connected
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleConnect(provider.id)}
+                            disabled={connectingProvider !== null}
+                            className="inline-flex items-center gap-1 bg-slate-900 text-white rounded-lg px-4 py-2 text-sm hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                          >
+                            Connect
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))
+              )}
             </motion.div>
-            <h2 className="text-xl font-medium text-white mb-2">Connected</h2>
-            <p className="text-zinc-400 text-sm mb-6">
-              Your device will start syncing shortly
-            </p>
-            <Button
-              variant="ghost"
-              onClick={reset}
-              className="text-zinc-200 hover:text-white hover:bg-white/10"
+          )}
+
+          {connectionState === 'connecting' && connectingProviderData && (
+            <motion.div
+              key="connecting"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-16"
             >
-              Connect another device
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div
+                role="status"
+                aria-live="polite"
+                aria-label={`Connecting to ${connectingProviderData.name}`}
+                className="w-12 h-12 mx-auto mb-4 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin"
+              />
+              <p className="text-slate-500 text-sm">
+                Connecting to {connectingProviderData.name}...
+              </p>
+            </motion.div>
+          )}
+
+          {connectionState === 'success' && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+              className="text-center py-16"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 200,
+                  damping: 12,
+                  delay: 0.1,
+                }}
+                className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center"
+              >
+                <Check className="w-8 h-8 text-emerald-500" />
+              </motion.div>
+              <h2 className="text-lg font-semibold text-slate-900 mb-2">Connected</h2>
+              <p className="text-slate-500 text-sm mb-6">
+                Your device will start syncing shortly
+              </p>
+              <button
+                onClick={reset}
+                className="text-sm text-slate-600 hover:text-slate-900 underline underline-offset-2 transition-colors"
+              >
+                Connect another device
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Footer Security */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="mt-20 flex items-center gap-2 text-zinc-500 text-base font-normal opacity-80 hover:opacity-100 transition-opacity"
-      >
-        <Lock className="w-4 h-4 stroke-[1.5]" />
+      <div className="max-w-xl mx-auto px-6 pb-8 flex items-center gap-2 text-slate-400 text-xs">
+        <Lock className="w-3.5 h-3.5 stroke-[1.5]" />
         <span>Your data is encrypted and secure</span>
-      </motion.div>
+      </div>
     </div>
   );
 }

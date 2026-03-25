@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Plus, Users as UsersIcon, Copy, Check, ExternalLink } from 'lucide-react';
 import { useUsers, useDeleteUser, useCreateUser } from '@/hooks/api/use-users';
 import type { UserCreate, UserQueryParams } from '@/lib/api/types';
@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { oauthService } from '@/lib/api/services/oauth.service';
+import { useTeams } from '@/hooks/use-teams';
 
 const initialFormState: UserCreate = {
   external_user_id: '',
@@ -35,7 +35,7 @@ function UsersPage() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [formData, setFormData] = useState<UserCreate>(initialFormState);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [whoopLink, setWhoopLink] = useState<string | null>(null);
+  const [pairingLink, setPairingLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [queryParams, setQueryParams] = useState<UserQueryParams>({
     page: 1,
@@ -43,10 +43,30 @@ function UsersPage() {
     sort_by: 'created_at',
     sort_order: 'desc',
   });
+  const [teamFilter, setTeamFilter] = useState('');
+
+  const { teams, userTeams, addTeam, setUserTeam, getUserTeam } = useTeams();
+  const [newUserTeam, setNewUserTeam] = useState<string>(() => teams[0] ?? 'Test Team');
+  const [isAddingTeam, setIsAddingTeam] = useState(false);
+  const [newTeamInput, setNewTeamInput] = useState('');
 
   const { data, isLoading, isFetching, error, refetch } = useUsers(queryParams);
   const deleteUser = useDeleteUser();
   const createUser = useCreateUser();
+
+  // Pre-populate existing users with "Test Team" on first load
+  const didPrePopulate = useRef(false);
+  useEffect(() => {
+    if (didPrePopulate.current) return;
+    const users = data?.items;
+    if (!users) return;
+    didPrePopulate.current = true;
+    for (const user of users) {
+      if (getUserTeam(user.id) === '') {
+        setUserTeam(user.id, 'Test Team');
+      }
+    }
+  }, [data?.items, getUserTeam, setUserTeam]);
 
   const handleQueryChange = useCallback((params: UserQueryParams) => {
     setQueryParams(params);
@@ -86,17 +106,18 @@ function UsersPage() {
       email: formData.email?.trim() || null,
     };
 
+    const teamToAssign = newUserTeam;
+
     createUser.mutate(payload, {
-      onSuccess: async (newUser) => {
+      onSuccess: (newUser) => {
         setFormData(initialFormState);
         setFormErrors({});
-        // Auto-generate WHOOP link for the new user
-        try {
-          const result = await oauthService.getWhoopAuthorizeUrl(newUser.id);
-          setWhoopLink(result.authorization_url);
-        } catch {
-          setWhoopLink(null);
-        }
+        // Assign team
+        setUserTeam(newUser.id, teamToAssign);
+        // Generate pairing URL
+        const baseUrl = window.location.origin;
+        const url = `${baseUrl}/users/${newUser.id}/pair`;
+        setPairingLink(url);
       },
     });
   };
@@ -105,8 +126,11 @@ function UsersPage() {
     setIsCreateDialogOpen(false);
     setFormData(initialFormState);
     setFormErrors({});
-    setWhoopLink(null);
+    setPairingLink(null);
     setLinkCopied(false);
+    setIsAddingTeam(false);
+    setNewTeamInput('');
+    setNewUserTeam(teams[0] ?? 'Test Team');
   };
 
   const handleDeleteUser = () => {
@@ -117,6 +141,15 @@ function UsersPage() {
         },
       });
     }
+  };
+
+  const handleAddNewTeam = () => {
+    const trimmed = newTeamInput.trim();
+    if (!trimmed) return;
+    addTeam(trimmed);
+    setNewUserTeam(trimmed);
+    setIsAddingTeam(false);
+    setNewTeamInput('');
   };
 
   if (isLoading) {
@@ -159,6 +192,11 @@ function UsersPage() {
   const total = data?.total ?? 0;
   const pageCount = data?.pages ?? 0;
 
+  // Filter by team if a team filter is selected
+  const filteredUsers = teamFilter
+    ? users.filter((u) => getUserTeam(u.id) === teamFilter)
+    : users;
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -174,10 +212,26 @@ function UsersPage() {
         </Button>
       </div>
 
+      {/* Team filter */}
+      {(total > 0 || queryParams.search) && (
+        <div className="mb-4">
+          <select
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+          >
+            <option value="">All teams</option>
+            {teams.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {total > 0 || queryParams.search ? (
         <UsersTable
-          data={users}
-          total={total}
+          data={filteredUsers}
+          total={teamFilter ? filteredUsers.length : total}
           page={queryParams.page ?? 1}
           pageSize={queryParams.limit ?? DEFAULT_PAGE_SIZE}
           pageCount={pageCount}
@@ -185,6 +239,7 @@ function UsersPage() {
           onDelete={setDeleteUserId}
           isDeleting={deleteUser.isPending}
           onQueryChange={handleQueryChange}
+          teamMap={userTeams}
         />
       ) : (
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 text-center">
@@ -212,22 +267,21 @@ function UsersPage() {
         }}
       >
         <DialogContent className="max-w-md">
-          {whoopLink ? (
+          {pairingLink ? (
             <>
               <DialogHeader>
                 <DialogTitle>User Created!</DialogTitle>
                 <DialogDescription>
-                  Send this WHOOP connection link to your athlete. When they
-                  click it, they'll log into WHOOP and their data will start
-                  syncing automatically.
+                  Send this link to your athlete. They can use it to connect
+                  their WHOOP or other supported devices.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3">
-                <Label className="text-zinc-300">WHOOP Connection Link</Label>
+                <Label className="text-zinc-300">Athlete pairing link</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     readOnly
-                    value={whoopLink}
+                    value={pairingLink}
                     className="bg-zinc-800 border-zinc-700 font-mono text-xs"
                   />
                   <Button
@@ -235,7 +289,7 @@ function UsersPage() {
                     size="icon"
                     className="shrink-0"
                     onClick={async () => {
-                      await navigator.clipboard.writeText(whoopLink);
+                      await navigator.clipboard.writeText(pairingLink);
                       setLinkCopied(true);
                       setTimeout(() => setLinkCopied(false), 2000);
                     }}
@@ -250,7 +304,7 @@ function UsersPage() {
                     variant="outline"
                     size="icon"
                     className="shrink-0"
-                    onClick={() => window.open(whoopLink, '_blank')}
+                    onClick={() => window.open(pairingLink, '_blank')}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
@@ -361,6 +415,67 @@ function UsersPage() {
                   />
                   {formErrors.email && (
                     <p className="text-xs text-red-500">{formErrors.email}</p>
+                  )}
+                </div>
+                {/* Team selection */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="team" className="text-zinc-300">
+                    Team
+                  </Label>
+                  {isAddingTeam ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        autoFocus
+                        type="text"
+                        placeholder="New team name..."
+                        value={newTeamInput}
+                        onChange={(e) => setNewTeamInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddNewTeam();
+                          if (e.key === 'Escape') {
+                            setIsAddingTeam(false);
+                            setNewTeamInput('');
+                          }
+                        }}
+                        className="bg-zinc-800 border-zinc-700 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleAddNewTeam}
+                      >
+                        Add
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setIsAddingTeam(false);
+                          setNewTeamInput('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <select
+                      id="team"
+                      value={newUserTeam}
+                      onChange={(e) => {
+                        if (e.target.value === '__new__') {
+                          setIsAddingTeam(true);
+                        } else {
+                          setNewUserTeam(e.target.value);
+                        }
+                      }}
+                      className="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-zinc-600"
+                    >
+                      {teams.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                      <option value="__new__">＋ New team…</option>
+                    </select>
                   )}
                 </div>
               </div>
