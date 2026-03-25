@@ -13,6 +13,7 @@ class Team(BaseDbModel):
 
     id: Mapped[PrimaryKey[UUID]]
     name: Mapped[str_255]
+    coach_email: Mapped[str | None]
     created_at: Mapped[datetime]
 
     members: Mapped[list["UserTeam"]] = relationship(

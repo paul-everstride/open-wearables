@@ -78,3 +78,15 @@ def remove_member(db: Session, team_id: UUID, user_id: UUID) -> bool:
     db.delete(assoc)
     db.commit()
     return True
+
+
+def get_all_memberships(db: Session) -> list[dict]:
+    rows = (
+        db.query(UserTeam.user_id, Team.id.label("team_id"), Team.name.label("team_name"), Team.coach_email)
+        .join(Team, Team.id == UserTeam.team_id)
+        .all()
+    )
+    return [
+        {"team_id": r.team_id, "team_name": r.team_name, "coach_email": r.coach_email, "user_id": r.user_id}
+        for r in rows
+    ]

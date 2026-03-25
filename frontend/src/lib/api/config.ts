@@ -88,5 +88,6 @@ export const API_ENDPOINTS = {
   teams: '/api/v1/teams',
   teamDetail: (id: string) => `/api/v1/teams/${id}`,
   teamMembers: (id: string) => `/api/v1/teams/${id}/users`,
+  teamMemberships: '/api/v1/teams/members',
   addTeamMember: (teamId: string, userId: string) => `/api/v1/teams/${teamId}/users/${userId}`,
 } as const;

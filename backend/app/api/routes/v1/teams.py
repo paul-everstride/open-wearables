@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 
 from app.database import DbSession
-from app.schemas.team import TeamCreate, TeamRead
+from app.schemas.team import TeamCreate, TeamRead, TeamMembershipRead
 from app.schemas.user import UserRead
 from app.services import ApiKeyDep
 from app.services import team_service
@@ -19,6 +19,11 @@ def list_teams(db: DbSession, _api_key: ApiKeyDep):
 @router.post("/teams", status_code=status.HTTP_201_CREATED, response_model=TeamRead)
 def create_team(payload: TeamCreate, db: DbSession, _api_key: ApiKeyDep):
     return team_service.create_team(db, payload)
+
+
+@router.get("/teams/members", response_model=list[TeamMembershipRead])
+def list_all_memberships(db: DbSession, _api_key: ApiKeyDep):
+    return team_service.get_all_memberships(db)
 
 
 @router.get("/teams/{team_id}", response_model=TeamRead)

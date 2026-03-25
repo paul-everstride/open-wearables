@@ -31,6 +31,11 @@ function TeamRow({ team }: { team: TeamRead }) {
 
       {expanded && (
         <div className="border-t border-zinc-800 px-4 py-3">
+          {team.coach_email && (
+            <p className="text-xs text-zinc-500 mb-3">
+              Coach: <span className="text-zinc-400">{team.coach_email}</span>
+            </p>
+          )}
           {isLoading ? (
             <div className="flex items-center gap-2 text-zinc-500 text-sm py-2">
               <Loader2 className="h-4 w-4 animate-spin" />

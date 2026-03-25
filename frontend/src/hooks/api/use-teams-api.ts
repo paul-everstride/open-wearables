@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from '@/lib/api/config';
 export interface TeamRead {
   id: string;
   name: string;
+  coach_email: string | null;
   created_at: string;
 }
 
@@ -29,6 +30,20 @@ export function useTeamMembers(teamId: string | null) {
     queryKey: ['teams', teamId, 'users'],
     queryFn: () => apiClient.get<TeamMemberRead[]>(API_ENDPOINTS.teamMembers(teamId!)),
     enabled: !!teamId,
+  });
+}
+
+export interface TeamMembershipRead {
+  team_id: string;
+  team_name: string;
+  coach_email: string | null;
+  user_id: string;
+}
+
+export function useTeamMemberships() {
+  return useQuery({
+    queryKey: ['teams', 'members'],
+    queryFn: () => apiClient.get<TeamMembershipRead[]>('/api/v1/teams/members'),
   });
 }
 

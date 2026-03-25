@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Plus, Users as UsersIcon, Copy, Check, ExternalLink } from 'lucide-react';
 import { useUsers, useDeleteUser, useCreateUser } from '@/hooks/api/use-users';
+import { useTeamMemberships } from '@/hooks/api/use-teams-api';
 import type { UserCreate, UserQueryParams } from '@/lib/api/types';
 import { UsersTable } from '@/components/users/users-table';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,13 @@ function UsersPage() {
   const { data, isLoading, isFetching, error, refetch } = useUsers(queryParams);
   const deleteUser = useDeleteUser();
   const createUser = useCreateUser();
+  const { data: memberships } = useTeamMemberships();
+
+  const userTeamMap = useMemo(() => {
+    const map: Record<string, { teamName: string; coachEmail: string | null }> = {};
+    memberships?.forEach(m => { map[m.user_id] = { teamName: m.team_name, coachEmail: m.coach_email }; });
+    return map;
+  }, [memberships]);
 
   const handleQueryChange = useCallback((params: UserQueryParams) => {
     setQueryParams(params);
@@ -187,6 +195,7 @@ function UsersPage() {
           onDelete={setDeleteUserId}
           isDeleting={deleteUser.isPending}
           onQueryChange={handleQueryChange}
+          teamMap={userTeamMap}
         />
       ) : (
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 text-center">

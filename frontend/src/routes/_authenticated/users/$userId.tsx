@@ -25,7 +25,7 @@ import {
   useGenerateInvitationCode,
 } from '@/hooks/api/use-users';
 import { oauthService } from '@/lib/api/services/oauth.service';
-import { useTeams } from '@/hooks/use-teams';
+import { useTeamMemberships } from '@/hooks/api/use-teams-api';
 import { ROUTES } from '@/lib/constants/routes';
 import { API_CONFIG } from '@/lib/api/config';
 import { copyToClipboard } from '@/lib/utils/clipboard';
@@ -107,7 +107,8 @@ function UserDetailPage() {
   const [whoopLinkCopied, setWhoopLinkCopied] = useState(false);
   const [isGeneratingWhoopLink, setIsGeneratingWhoopLink] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { getUserTeam } = useTeams();
+  const { data: memberships } = useTeamMemberships();
+  const userTeam = memberships?.find(m => m.user_id === userId);
 
   const isUploading = isUploadingFile(userId);
 
@@ -276,11 +277,11 @@ function UserDetailPage() {
                 <p className="text-sm text-zinc-500">
                   {user?.email || 'No email'}
                 </p>
-                {getUserTeam(userId) && (
+                {userTeam && (
                   <>
                     <span className="text-zinc-700">·</span>
                     <span className="inline-flex items-center rounded-md bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
-                      {getUserTeam(userId)}
+                      {userTeam.team_name}
                     </span>
                   </>
                 )}

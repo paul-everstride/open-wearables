@@ -50,6 +50,7 @@ interface UsersTableProps {
   onDelete: (userId: string) => void;
   isDeleting?: boolean;
   onQueryChange: (params: UserQueryParams) => void;
+  teamMap?: Record<string, { teamName: string; coachEmail: string | null }>;
 }
 
 const columnToSortBy: Record<string, UserQueryParams['sort_by']> = {
@@ -69,6 +70,7 @@ export function UsersTable({
   onDelete,
   isDeleting,
   onQueryChange,
+  teamMap,
 }: UsersTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'created_at', desc: true },
@@ -261,6 +263,24 @@ export function UsersTable({
           {row.original.email || '—'}
         </span>
       ),
+    },
+    {
+      id: 'team',
+      header: () => (
+        <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+          Team
+        </span>
+      ),
+      cell: ({ row }) => (
+        teamMap?.[row.original.id]?.teamName ? (
+          <span className="inline-flex items-center rounded-md bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
+            {teamMap[row.original.id].teamName}
+          </span>
+        ) : (
+          <span className="text-zinc-600 text-xs">—</span>
+        )
+      ),
+      enableSorting: false,
     },
     {
       accessorKey: 'created_at',
