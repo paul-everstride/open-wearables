@@ -20,22 +20,14 @@ export interface TeamMemberRead {
 export function useTeamsApi() {
   return useQuery({
     queryKey: ['teams'],
-    queryFn: async () => {
-      const response = await apiClient.get<TeamRead[]>(API_ENDPOINTS.teams);
-      return response.data;
-    },
+    queryFn: () => apiClient.get<TeamRead[]>(API_ENDPOINTS.teams),
   });
 }
 
 export function useTeamMembers(teamId: string | null) {
   return useQuery({
     queryKey: ['teams', teamId, 'users'],
-    queryFn: async () => {
-      const response = await apiClient.get<TeamMemberRead[]>(
-        API_ENDPOINTS.teamMembers(teamId!)
-      );
-      return response.data;
-    },
+    queryFn: () => apiClient.get<TeamMemberRead[]>(API_ENDPOINTS.teamMembers(teamId!)),
     enabled: !!teamId,
   });
 }
@@ -43,10 +35,8 @@ export function useTeamMembers(teamId: string | null) {
 export function useCreateTeam() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (name: string) => {
-      const response = await apiClient.post<TeamRead>(API_ENDPOINTS.teams, { name });
-      return response.data;
-    },
+    mutationFn: (name: string) =>
+      apiClient.post<TeamRead>(API_ENDPOINTS.teams, { name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
     },
