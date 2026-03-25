@@ -83,4 +83,10 @@ export const API_ENDPOINTS = {
 
   // Sleep sessions endpoint
   userSleepSessions: (userId: string) => `/api/v1/users/${userId}/events/sleep`,
+
+  // Teams endpoints
+  teams: '/api/v1/teams',
+  teamDetail: (id: string) => `/api/v1/teams/${id}`,
+  teamMembers: (id: string) => `/api/v1/teams/${id}/users`,
+  addTeamMember: (teamId: string, userId: string) => `/api/v1/teams/${teamId}/users/${userId}`,
 } as const;

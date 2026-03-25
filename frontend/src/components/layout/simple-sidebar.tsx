@@ -2,6 +2,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 import {
   Home,
   Users,
+  Shield,
   FileText,
   LogOut,
   Settings,
@@ -23,6 +24,11 @@ const menuItems = [
     title: 'Users',
     url: ROUTES.users,
     icon: Users,
+  },
+  {
+    title: 'Teams',
+    url: ROUTES.teams,
+    icon: Shield,
   },
   {
     title: 'Settings',

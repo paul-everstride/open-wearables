@@ -24,6 +24,7 @@ from .sync_data import router as sync_data_router
 from .timeseries import router as timeseries_router
 from .token import router as token_router
 from .user_invitation_code import router as user_invitation_code_router
+from .teams import router as teams_router
 from .users import router as users_router
 from .vendor_workouts import router as vendor_workouts_router
 
@@ -45,6 +46,7 @@ v1_router.include_router(vendor_workouts_router, prefix="/providers", tags=["pro
 v1_router.include_router(sync_data_router, prefix="/providers", tags=["sync data"])
 # Suunto debug endpoints for raw API access
 v1_router.include_router(suunto_debug_router, prefix="/debug", tags=["debug"])
+v1_router.include_router(teams_router, tags=["teams"])
 v1_router.include_router(users_router, tags=["users"])
 v1_router.include_router(connections_router, tags=["data"])
 v1_router.include_router(import_xml_router, tags=["Apple Health XML import"])
