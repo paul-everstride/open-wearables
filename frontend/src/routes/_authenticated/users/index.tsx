@@ -49,8 +49,8 @@ function UsersPage() {
   const { data: memberships } = useTeamMemberships();
 
   const userTeamMap = useMemo(() => {
-    const map: Record<string, { teamName: string; coachEmail: string | null }> = {};
-    memberships?.forEach(m => { map[m.user_id] = { teamName: m.team_name, coachEmail: m.coach_email }; });
+    const map: Record<string, { teamName: string; teamId: string; coachEmail: string | null }> = {};
+    memberships?.forEach(m => { map[m.user_id] = { teamName: m.team_name, teamId: m.team_id, coachEmail: m.coach_email }; });
     return map;
   }, [memberships]);
 

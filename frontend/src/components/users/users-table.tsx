@@ -27,6 +27,7 @@ import { formatDistanceToNow } from 'date-fns';
 import type { UserRead, UserQueryParams } from '@/lib/api/types';
 import { copyToClipboard } from '@/lib/utils/clipboard';
 import { truncateId } from '@/lib/utils/format';
+import { getTeamColor } from '@/lib/utils/team-colors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppleXmlUpload } from '@/hooks/api/use-users';
@@ -50,7 +51,7 @@ interface UsersTableProps {
   onDelete: (userId: string) => void;
   isDeleting?: boolean;
   onQueryChange: (params: UserQueryParams) => void;
-  teamMap?: Record<string, { teamName: string; coachEmail: string | null }>;
+  teamMap?: Record<string, { teamName: string; teamId: string; coachEmail: string | null }>;
 }
 
 const columnToSortBy: Record<string, UserQueryParams['sort_by']> = {
@@ -271,15 +272,19 @@ export function UsersTable({
           Team
         </span>
       ),
-      cell: ({ row }) => (
-        teamMap?.[row.original.id]?.teamName ? (
-          <span className="inline-flex items-center rounded-md bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
-            {teamMap[row.original.id].teamName}
+      cell: ({ row }) => {
+        const entry = teamMap?.[row.original.id];
+        if (!entry?.teamName) return <span className="text-zinc-600 text-xs">—</span>;
+        const color = getTeamColor(entry.teamId, 'dark');
+        return (
+          <span
+            className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium"
+            style={{ backgroundColor: color.bg, color: color.text, border: `1px solid ${color.border}` }}
+          >
+            {entry.teamName}
           </span>
-        ) : (
-          <span className="text-zinc-600 text-xs">—</span>
-        )
-      ),
+        );
+      },
       enableSorting: false,
     },
     {

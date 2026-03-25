@@ -80,3 +80,25 @@ export function useCoachTeams(coachEmail: string | null) {
     enabled: !!coachEmail,
   });
 }
+
+export function useAddTeamMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
+      apiClient.post(`/api/v1/teams/${teamId}/users/${userId}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+  });
+}
+
+export function useRemoveTeamMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
+      apiClient.delete(`/api/v1/teams/${teamId}/users/${userId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    },
+  });
+}

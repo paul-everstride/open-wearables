@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useMemo } from 'react';
-import { Shield, ChevronDown, ChevronRight, Loader2, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Plus } from 'lucide-react';
 import { useTeamsApi, useTeamMembers, useCreateTeam } from '@/hooks/api/use-teams-api';
 import type { TeamRead } from '@/hooks/api/use-teams-api';
+import { getTeamColor } from '@/lib/utils/team-colors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/_authenticated/teams/')({
 function TeamRow({ team }: { team: TeamRead }) {
   const [expanded, setExpanded] = useState(false);
   const { data: members, isLoading } = useTeamMembers(expanded ? team.id : null);
+  const color = getTeamColor(team.id, 'dark');
 
   return (
     <div className="rounded-lg border border-zinc-800 overflow-hidden">
@@ -25,7 +27,7 @@ function TeamRow({ team }: { team: TeamRead }) {
         ) : (
           <ChevronRight className="h-4 w-4 text-zinc-500 shrink-0" />
         )}
-        <Shield className="h-4 w-4 text-zinc-500 shrink-0" />
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color.text }} />
         <span className="text-sm font-medium text-zinc-200">{team.name}</span>
       </button>
 

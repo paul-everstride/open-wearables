@@ -25,7 +25,8 @@ import {
   useGenerateInvitationCode,
 } from '@/hooks/api/use-users';
 import { oauthService } from '@/lib/api/services/oauth.service';
-import { useTeamMemberships } from '@/hooks/api/use-teams-api';
+import { useTeamsApi, useTeamMemberships, useAddTeamMember, useRemoveTeamMember } from '@/hooks/api/use-teams-api';
+import { getTeamColor } from '@/lib/utils/team-colors';
 import { ROUTES } from '@/lib/constants/routes';
 import { API_CONFIG } from '@/lib/api/config';
 import { copyToClipboard } from '@/lib/utils/clipboard';
@@ -109,6 +110,11 @@ function UserDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: memberships } = useTeamMemberships();
   const userTeam = memberships?.find(m => m.user_id === userId);
+  const { data: teams } = useTeamsApi();
+  const addTeamMember = useAddTeamMember();
+  const removeTeamMember = useRemoveTeamMember();
+  const [teamEditOpen, setTeamEditOpen] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
 
   const isUploading = isUploadingFile(userId);
 
@@ -277,13 +283,28 @@ function UserDetailPage() {
                 <p className="text-sm text-zinc-500">
                   {user?.email || 'No email'}
                 </p>
-                {userTeam && (
-                  <>
-                    <span className="text-zinc-700">·</span>
-                    <span className="inline-flex items-center rounded-md bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
-                      {userTeam.team_name}
-                    </span>
-                  </>
+                {userTeam && (() => {
+                  const color = getTeamColor(userTeam.team_id, 'dark');
+                  return (
+                    <>
+                      <span className="text-zinc-700">·</span>
+                      <button
+                        onClick={() => { setSelectedTeamId(userTeam.team_id); setTeamEditOpen(true); }}
+                        className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium transition hover:opacity-80"
+                        style={{ backgroundColor: color.bg, color: color.text, border: `1px solid ${color.border}` }}
+                      >
+                        {userTeam.team_name}
+                      </button>
+                    </>
+                  );
+                })()}
+                {!userTeam && (
+                  <button
+                    onClick={() => { setSelectedTeamId(''); setTeamEditOpen(true); }}
+                    className="inline-flex items-center rounded-md bg-zinc-800 border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400 hover:text-zinc-200 transition"
+                  >
+                    + Add to team
+                  </button>
                 )}
               </div>
             </div>
@@ -464,6 +485,61 @@ function UserDetailPage() {
             <p className="text-[11px] text-zinc-500">
               Links expire after use. Generate a new one if needed.
             </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Team change dialog */}
+      <Dialog open={teamEditOpen} onOpenChange={setTeamEditOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Change team</DialogTitle>
+            <DialogDescription>
+              Assign this athlete to a team.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {/* No team option */}
+            <button
+              onClick={async () => {
+                if (userTeam) {
+                  await removeTeamMember.mutateAsync({ teamId: userTeam.team_id, userId });
+                }
+                setTeamEditOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition ${!userTeam ? 'border-zinc-600 bg-zinc-800 text-white' : 'border-zinc-800 text-zinc-400 hover:bg-zinc-900'}`}
+            >
+              <span className="w-3 h-3 rounded-full bg-zinc-600 shrink-0" />
+              No team
+            </button>
+            {teams?.map(team => {
+              const color = getTeamColor(team.id, 'dark');
+              const isSelected = userTeam?.team_id === team.id;
+              return (
+                <button
+                  key={team.id}
+                  onClick={async () => {
+                    if (userTeam && userTeam.team_id !== team.id) {
+                      await removeTeamMember.mutateAsync({ teamId: userTeam.team_id, userId });
+                    }
+                    if (!isSelected) {
+                      await addTeamMember.mutateAsync({ teamId: team.id, userId });
+                    }
+                    setTeamEditOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition hover:opacity-90"
+                  style={{
+                    backgroundColor: isSelected ? color.bg : 'transparent',
+                    color: isSelected ? color.text : '#a1a1aa',
+                    borderColor: isSelected ? color.border : '#3f3f46',
+                  }}
+                >
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color.text }} />
+                  {team.name}
+                  {isSelected && <Check className="h-3.5 w-3.5 ml-auto" />}
+                </button>
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>
