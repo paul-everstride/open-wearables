@@ -80,7 +80,7 @@ function PairWearablePage() {
       </div>
 
       {/* Hero intro */}
-      <div className="max-w-xl mx-auto px-6 pt-10 pb-6">
+      <div className="max-w-2xl mx-auto px-6 pt-10 pb-6">
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mb-2">
           Connect your device
         </h1>
@@ -96,7 +96,7 @@ function PairWearablePage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="max-w-xl mx-auto px-6 mb-4"
+            className="max-w-2xl mx-auto px-6 mb-4"
           >
             <div className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
@@ -115,7 +115,7 @@ function PairWearablePage() {
       </AnimatePresence>
 
       {/* Provider cards */}
-      <div className="max-w-xl mx-auto px-6 pb-12">
+      <div className="max-w-2xl mx-auto px-6 pb-12">
         <AnimatePresence mode="wait">
           {connectionState === 'idle' && (
             <motion.div
@@ -123,10 +123,10 @@ function PairWearablePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-1 gap-4"
+              className="grid grid-cols-2 gap-4"
             >
               {isLoading ? (
-                <div className="flex justify-center py-12">
+                <div className="col-span-2 flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
                 </div>
               ) : (
@@ -144,29 +144,29 @@ function PairWearablePage() {
                           : 'border-slate-200 hover:shadow-md hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex items-center gap-4 p-5">
+                      <div className="flex flex-col items-center gap-4 p-8">
                         {/* Provider logo */}
-                        <div className="flex items-center justify-center h-14 w-14 bg-slate-100 rounded-xl shrink-0">
+                        <div className="flex items-center justify-center h-20 w-20 bg-slate-100 rounded-2xl shrink-0">
                           <img
                             src={provider.logoPath}
                             alt={`${provider.name} logo`}
-                            className="w-9 h-9 object-contain"
+                            className="w-12 h-12 object-contain"
                           />
                         </div>
 
                         {/* Text */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-slate-900 font-medium text-sm">
+                        <div className="text-center">
+                          <p className="text-slate-900 font-semibold text-base">
                             {provider.name}
                           </p>
-                          <p className="text-slate-500 text-xs mt-0.5">
+                          <p className="text-slate-500 text-xs mt-1">
                             {provider.description}
                           </p>
                         </div>
 
                         {/* Action */}
                         {provider.isConnected ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 text-xs font-medium shrink-0">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-1.5 text-xs font-medium">
                             <Check className="w-3.5 h-3.5" />
                             Connected
                           </span>
@@ -174,7 +174,7 @@ function PairWearablePage() {
                           <button
                             onClick={() => handleConnect(provider.id)}
                             disabled={connectingProvider !== null}
-                            className="inline-flex items-center gap-1 bg-slate-900 text-white rounded-lg px-4 py-2 text-sm hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                            className="w-full inline-flex items-center justify-center gap-1 bg-slate-900 text-white rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             Connect
                             <ChevronRight className="w-3.5 h-3.5" />
@@ -244,7 +244,7 @@ function PairWearablePage() {
       </div>
 
       {/* Footer Security */}
-      <div className="max-w-xl mx-auto px-6 pb-8 flex items-center gap-2 text-slate-400 text-xs">
+      <div className="max-w-2xl mx-auto px-6 pb-8 flex items-center gap-2 text-slate-400 text-xs">
         <Lock className="w-3.5 h-3.5 stroke-[1.5]" />
         <span>Your data is encrypted and secure</span>
       </div>

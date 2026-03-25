@@ -75,20 +75,27 @@ function UsersPage() {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (formData.external_user_id && formData.external_user_id.length > 255) {
-      errors.external_user_id =
-        'External User ID must be 255 characters or less';
+    if (!formData.external_user_id?.trim()) {
+      errors.external_user_id = 'External User ID is required';
+    } else if (formData.external_user_id.length > 255) {
+      errors.external_user_id = 'External User ID must be 255 characters or less';
     }
 
-    if (formData.first_name && formData.first_name.length > 100) {
+    if (!formData.first_name?.trim()) {
+      errors.first_name = 'First name is required';
+    } else if (formData.first_name.length > 100) {
       errors.first_name = 'First name must be 100 characters or less';
     }
 
-    if (formData.last_name && formData.last_name.length > 100) {
+    if (!formData.last_name?.trim()) {
+      errors.last_name = 'Last name is required';
+    } else if (formData.last_name.length > 100) {
       errors.last_name = 'Last name must be 100 characters or less';
     }
 
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!formData.email?.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
 
