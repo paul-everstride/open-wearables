@@ -91,9 +91,13 @@ export const apiClient = {
       });
 
       if (response.status === 401) {
-        clearSession();
-        if (typeof window !== 'undefined') {
-          window.location.href = ROUTES.login;
+        // Only redirect to login if the user had a session token (expired session).
+        // If there was no token, this is a public page — just throw without redirecting.
+        if (token) {
+          clearSession();
+          if (typeof window !== 'undefined') {
+            window.location.href = ROUTES.login;
+          }
         }
         throw ApiError.fromResponse(response);
       }
