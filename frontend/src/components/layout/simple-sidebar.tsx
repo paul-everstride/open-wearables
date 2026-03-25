@@ -7,6 +7,7 @@ import {
   LogOut,
   Settings,
   ExternalLink,
+  UserCheck,
 } from 'lucide-react';
 import logotype from '@/logotype.svg';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,11 @@ const menuItems = [
     title: 'Teams',
     url: ROUTES.teams,
     icon: Shield,
+  },
+  {
+    title: 'Coaches',
+    url: ROUTES.coaches,
+    icon: UserCheck,
   },
   {
     title: 'Settings',

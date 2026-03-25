@@ -57,3 +57,26 @@ export function useCreateTeam() {
     },
   });
 }
+
+export interface CoachRead {
+  id: string;
+  email: string;
+  name: string | null;
+  created_at: string;
+  team_count: number;
+}
+
+export function useCoaches() {
+  return useQuery({
+    queryKey: ['coaches'],
+    queryFn: () => apiClient.get<CoachRead[]>('/api/v1/coaches'),
+  });
+}
+
+export function useCoachTeams(coachEmail: string | null) {
+  return useQuery({
+    queryKey: ['coaches', coachEmail, 'teams'],
+    queryFn: () => apiClient.get<TeamRead[]>(`/api/v1/coaches/${encodeURIComponent(coachEmail!)}/teams`),
+    enabled: !!coachEmail,
+  });
+}

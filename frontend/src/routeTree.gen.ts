@@ -22,6 +22,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
 import { Route as AuthenticatedTeamsIndexRouteImport } from './routes/_authenticated/teams/index'
+import { Route as AuthenticatedCoachesIndexRouteImport } from './routes/_authenticated/coaches/index'
 import { Route as UsersUserIdPairRouteImport } from './routes/users/$userId/pair'
 import { Route as AuthenticatedUsersUserIdRouteImport } from './routes/_authenticated/users/$userId'
 import { Route as UsersUserIdPairIndexRouteImport } from './routes/users/$userId/pair.index'
@@ -92,6 +93,12 @@ const AuthenticatedTeamsIndexRoute = AuthenticatedTeamsIndexRouteImport.update({
   path: '/teams/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCoachesIndexRoute =
+  AuthenticatedCoachesIndexRouteImport.update({
+    id: '/coaches/',
+    path: '/coaches/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const UsersUserIdPairRoute = UsersUserIdPairRouteImport.update({
   id: '/users/$userId/pair',
   path: '/users/$userId/pair',
@@ -132,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/widget/connect': typeof WidgetConnectRoute
   '/users/$userId': typeof AuthenticatedUsersUserIdRoute
   '/users/$userId/pair': typeof UsersUserIdPairRouteWithChildren
+  '/coaches/': typeof AuthenticatedCoachesIndexRoute
   '/teams/': typeof AuthenticatedTeamsIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
   '/users/$userId/pair/error': typeof UsersUserIdPairErrorRoute
@@ -149,6 +157,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/widget/connect': typeof WidgetConnectRoute
   '/users/$userId': typeof AuthenticatedUsersUserIdRoute
+  '/coaches': typeof AuthenticatedCoachesIndexRoute
   '/teams': typeof AuthenticatedTeamsIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/users/$userId/pair/error': typeof UsersUserIdPairErrorRoute
@@ -170,6 +179,7 @@ export interface FileRoutesById {
   '/widget/connect': typeof WidgetConnectRoute
   '/_authenticated/users/$userId': typeof AuthenticatedUsersUserIdRoute
   '/users/$userId/pair': typeof UsersUserIdPairRouteWithChildren
+  '/_authenticated/coaches/': typeof AuthenticatedCoachesIndexRoute
   '/_authenticated/teams/': typeof AuthenticatedTeamsIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
   '/users/$userId/pair/error': typeof UsersUserIdPairErrorRoute
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/widget/connect'
     | '/users/$userId'
     | '/users/$userId/pair'
+    | '/coaches/'
     | '/teams/'
     | '/users/'
     | '/users/$userId/pair/error'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/widget/connect'
     | '/users/$userId'
+    | '/coaches'
     | '/teams'
     | '/users'
     | '/users/$userId/pair/error'
@@ -228,6 +240,7 @@ export interface FileRouteTypes {
     | '/widget/connect'
     | '/_authenticated/users/$userId'
     | '/users/$userId/pair'
+    | '/_authenticated/coaches/'
     | '/_authenticated/teams/'
     | '/_authenticated/users/'
     | '/users/$userId/pair/error'
@@ -340,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeamsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/coaches/': {
+      id: '/_authenticated/coaches/'
+      path: '/coaches'
+      fullPath: '/coaches/'
+      preLoaderRoute: typeof AuthenticatedCoachesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/users/$userId/pair': {
       id: '/users/$userId/pair'
       path: '/users/$userId/pair'
@@ -395,6 +415,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRouteWithChildren
+  AuthenticatedCoachesIndexRoute: typeof AuthenticatedCoachesIndexRoute
   AuthenticatedTeamsIndexRoute: typeof AuthenticatedTeamsIndexRoute
 }
 
@@ -402,6 +423,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRouteWithChildren,
+  AuthenticatedCoachesIndexRoute: AuthenticatedCoachesIndexRoute,
   AuthenticatedTeamsIndexRoute: AuthenticatedTeamsIndexRoute,
 }
 

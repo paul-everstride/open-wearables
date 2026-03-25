@@ -1,4 +1,5 @@
 from .api_key import ApiKey
+from .coach import Coach
 from .application import Application
 from .archival_setting import ArchivalSetting
 from .data_point_series import DataPointSeries
@@ -45,4 +46,5 @@ __all__ = [
     "SeriesTypeDefinition",
     "Team",
     "UserTeam",
+    "Coach",
 ]

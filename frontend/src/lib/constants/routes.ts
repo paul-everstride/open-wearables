@@ -10,6 +10,7 @@ export const ROUTES = {
   dashboard: '/dashboard',
   users: '/users',
   teams: '/teams',
+  coaches: '/coaches',
   settings: '/settings',
 
   // Widget routes

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Shield, ChevronDown, ChevronRight, Loader2, Plus } from 'lucide-react';
 import { useTeamsApi, useTeamMembers, useCreateTeam } from '@/hooks/api/use-teams-api';
 import type { TeamRead } from '@/hooks/api/use-teams-api';
@@ -82,6 +82,24 @@ function TeamsPage() {
     setNewName('');
   }
 
+  const groupedTeams = useMemo(() => {
+    if (!teams) return [];
+    const map = new Map<string, { label: string; teams: typeof teams }>();
+    for (const team of teams) {
+      const key = team.coach_email ?? '__unassigned__';
+      const label = team.coach_email ?? 'Unassigned';
+      if (!map.has(key)) map.set(key, { label, teams: [] });
+      map.get(key)!.teams.push(team);
+    }
+    // Put unassigned last
+    const entries = [...map.entries()].sort(([a], [b]) => {
+      if (a === '__unassigned__') return 1;
+      if (b === '__unassigned__') return -1;
+      return a.localeCompare(b);
+    });
+    return entries.map(([, v]) => v);
+  }, [teams]);
+
   return (
     <div className="p-6 max-w-2xl">
       <div className="mb-6">
@@ -127,9 +145,18 @@ function TeamsPage() {
       ) : !teams || teams.length === 0 ? (
         <p className="text-sm text-zinc-600">No teams yet.</p>
       ) : (
-        <div className="space-y-2">
-          {teams.map((team) => (
-            <TeamRow key={team.id} team={team} />
+        <div className="space-y-6">
+          {groupedTeams.map((group) => (
+            <div key={group.label}>
+              <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-2">
+                Coach: <span className="text-zinc-400 normal-case tracking-normal">{group.label}</span>
+              </p>
+              <div className="space-y-2">
+                {group.teams.map((team) => (
+                  <TeamRow key={team.id} team={team} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
