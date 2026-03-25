@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 
 from app.database import DbSession
-from app.schemas.team import TeamCreate, TeamRead, TeamMembershipRead
+from app.schemas.team import TeamCreate, TeamRead, TeamMembershipRead, TeamUpdate
 from app.schemas.user import UserRead
 from app.services import ApiKeyDep
 from app.services import team_service
@@ -49,6 +49,19 @@ def add_team_member(team_id: UUID, user_id: UUID, db: DbSession, _api_key: ApiKe
         raise HTTPException(status_code=404, detail="Team not found")
     team_service.add_member(db, team_id, user_id)
     return {"status": "ok"}
+
+
+@router.patch("/teams/{team_id}", response_model=TeamRead)
+def update_team(team_id: UUID, payload: TeamUpdate, db: DbSession, _api_key: ApiKeyDep):
+    if payload.coach_email is not None:
+        team = team_service.update_team_coach(db, team_id, payload.coach_email)
+        if not team:
+            raise HTTPException(status_code=404, detail="Team not found")
+        return team
+    team = team_service.get_team(db, team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return team
 
 
 @router.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)

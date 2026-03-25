@@ -23,6 +23,10 @@ class TeamRead(BaseModel):
     created_at: datetime
 
 
+class TeamUpdate(BaseModel):
+    coach_email: str | None = None
+
+
 class TeamMemberRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

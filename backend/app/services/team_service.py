@@ -28,9 +28,21 @@ def create_team(db: Session, payload: TeamCreate) -> Team:
     team = Team(
         id=uuid4(),
         name=name,
+        coach_email=payload.coach_email,
         created_at=datetime.now(timezone.utc),
     )
     db.add(team)
+    db.commit()
+    db.refresh(team)
+    return team
+
+
+def update_team_coach(db: Session, team_id: UUID, coach_email: str) -> Team | None:
+    """Set or update the coach_email on an existing team (used for backfill)."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        return None
+    team.coach_email = coach_email
     db.commit()
     db.refresh(team)
     return team
