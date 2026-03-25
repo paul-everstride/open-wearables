@@ -67,7 +67,7 @@ function TeamRow({ team }: { team: TeamRead }) {
 }
 
 function TeamsPage() {
-  const { data: teams, isLoading } = useTeamsApi();
+  const { data: teams, isLoading, error, isError } = useTeamsApi();
   const createTeam = useCreateTeam();
   const [newName, setNewName] = useState('');
 
@@ -107,6 +107,12 @@ function TeamsPage() {
           Create
         </Button>
       </div>
+
+      {isError && (
+        <div className="rounded-lg border border-red-800/50 bg-red-900/20 px-4 py-3 text-sm text-red-400">
+          Failed to load teams: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center gap-2 text-zinc-500 text-sm">
