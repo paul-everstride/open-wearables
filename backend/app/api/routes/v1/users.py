@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, status
 from app.database import DbSession
 from app.schemas.common import PaginatedResponse
 from app.schemas.user import UserCreate, UserQueryParams, UserRead, UserUpdate
-from app.services import ApiKeyDep, DeveloperDep, user_service
+from app.services import ApiKeyDep, user_service
 
 router = APIRouter()
 
@@ -60,5 +60,5 @@ def delete_user(user_id: UUID, db: DbSession, _api_key: ApiKeyDep):
 
 
 @router.patch("/users/{user_id}", response_model=UserRead)
-def update_user(user_id: UUID, payload: UserUpdate, db: DbSession, _developer: DeveloperDep):
+def update_user(user_id: UUID, payload: UserUpdate, db: DbSession, _api_key: ApiKeyDep):
     return user_service.update(db, user_id, payload, raise_404=True)
