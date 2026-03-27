@@ -43,35 +43,38 @@ class DataPointSeriesRepository(
 
     @handle_exceptions
     def create(self, db_session: DbSession, creator: TimeSeriesSampleCreate) -> DataPointSeries:
-        """Create a data point sample, or return existing if duplicate.
+        """Create a data point sample, upserting on the unique constraint.
 
-        Handles duplicate records gracefully by catching IntegrityError and
-        returning the existing record instead.
+        Uses INSERT … ON CONFLICT DO UPDATE so that re-syncing existing records
+        never causes Postgres to log a constraint-violation error.
         """
         data_source = self.create_data_source(db_session, creator)
 
-        creation_data = creator.model_dump()
+        series_type_id = get_series_type_id(creator.series_type)
+        values = {
+            "id": creator.id,
+            "external_id": creator.external_id,
+            "data_source_id": data_source.id,
+            "recorded_at": creator.recorded_at,
+            "zone_offset": creator.zone_offset,
+            "value": creator.value,
+            "series_type_definition_id": series_type_id,
+        }
 
-        # Remove schema-only fields before creating the model
-        for redundant_key in (
-            "user_id",
-            "source",
-            "device_model",
-            "provider",
-            "user_connection_id",
-            "software_version",
-            "series_type",
-            "data_source_id",
-        ):
-            creation_data.pop(redundant_key, None)
+        stmt = insert(self.model).values([values])
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["data_source_id", "series_type_definition_id", "recorded_at"],
+            set_={
+                "value": stmt.excluded.value,
+                "external_id": stmt.excluded.external_id,
+                "zone_offset": stmt.excluded.zone_offset,
+            },
+        ).returning(self.model)
 
-        # Set the proper values
-        creation_data["data_source_id"] = data_source.id
-        creation_data["series_type_definition_id"] = get_series_type_id(creator.series_type)
-
-        creation = self.model(**creation_data)
-        db_session.add(creation)
-        return self.try_commit(db_session, creation)
+        result = db_session.execute(stmt)
+        db_session.commit()
+        row = result.fetchone()
+        return row[0] if row else self.model(**values)
 
     @handle_exceptions
     def bulk_create(self, db_session: DbSession, creators: list[TimeSeriesSampleCreate]) -> list[DataPointSeries]:

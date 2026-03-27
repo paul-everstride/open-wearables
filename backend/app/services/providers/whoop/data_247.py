@@ -647,8 +647,6 @@ class Whoop247Data(Base247DataTemplate):
         if not timestamp:
             return 0
 
-        count = 0
-
         # Map WHOOP fields to SeriesType
         metrics = [
             ("recovery_score", SeriesType.recovery_score),
@@ -659,11 +657,12 @@ class Whoop247Data(Base247DataTemplate):
             ("respiratory_rate", SeriesType.respiratory_rate),
         ]
 
+        samples: list[TimeSeriesSampleCreate] = []
         for field_name, series_type in metrics:
             value = normalized_recovery.get(field_name)
             if value is not None:
-                try:
-                    sample = TimeSeriesSampleCreate(
+                samples.append(
+                    TimeSeriesSampleCreate(
                         id=uuid4(),
                         user_id=user_id,
                         source=self.provider_name,
@@ -671,18 +670,13 @@ class Whoop247Data(Base247DataTemplate):
                         value=Decimal(str(value)),
                         series_type=series_type,
                     )
-                    timeseries_service.crud.create(db, sample)
-                    count += 1
-                except Exception as e:
-                    log_structured(
-                        self.logger,
-                        "warning",
-                        f"Failed to save recovery {field_name}: {e}",
-                        provider="whoop",
-                        task="save_recovery_data",
-                    )
+                )
 
-        return count
+        if samples:
+            # bulk_create uses INSERT ON CONFLICT DO UPDATE so re-syncs are idempotent
+            timeseries_service.bulk_create_samples(db, samples)
+
+        return len(samples)
 
     def load_and_save_recovery(
         self,
