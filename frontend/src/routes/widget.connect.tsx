@@ -1,93 +1,74 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Check, ChevronRight, Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useOAuthProviders } from '@/hooks/api/use-oauth-providers';
+import { useOAuthConnect } from '@/hooks/use-oauth-connect';
 import { API_CONFIG } from '@/lib/api/config';
 
 export const Route = createFileRoute('/widget/connect')({
   component: ConnectWidgetPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    user_id: typeof search.user_id === 'string' ? search.user_id : undefined,
+  }),
 });
 
-type ConnectionState = 'idle' | 'connecting' | 'success' | 'error';
-
 function ConnectWidgetPage() {
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-  const [connectionState, setConnectionState] =
-    useState<ConnectionState>('idle');
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const { user_id: userId } = Route.useSearch();
+
+  const { connectionState, connectingProvider, error, connect, reset } =
+    useOAuthConnect({
+      userId: userId ?? '',
+      onSuccess: (providerId) => {
+        // Notify parent iframe on success
+        if (window.parent !== window) {
+          window.parent.postMessage(
+            { type: 'wearable_connected', provider: providerId },
+            '*'
+          );
+        }
+        setTimeout(() => {
+          if (window.parent !== window) {
+            window.parent.postMessage({ type: 'wearable_widget_close' }, '*');
+          }
+        }, 2000);
+      },
+    });
 
   const { data: apiProviders, isLoading } = useOAuthProviders(true, true);
 
   const displayProviders = useMemo(() => {
     if (!apiProviders) return [];
-    return apiProviders.map((apiProvider) => {
-      return {
-        id: apiProvider.provider,
-        name: apiProvider.name,
-        description: 'Connect your device',
-        logoPath: apiProvider.icon_url
-          ? `${API_CONFIG.baseUrl}${apiProvider.icon_url}`
-          : '',
-        isAvailable: apiProvider.is_enabled,
-      };
-    });
+    return apiProviders.map((apiProvider) => ({
+      id: apiProvider.provider,
+      name: apiProvider.name,
+      description: 'Connect your device',
+      logoPath: apiProvider.icon_url
+        ? `${API_CONFIG.baseUrl}${apiProvider.icon_url}`
+        : '',
+      isAvailable: apiProvider.is_enabled,
+    }));
   }, [apiProviders]);
 
-  const handleConnect = async (providerId: string, providerName: string) => {
+  const handleConnect = (providerId: string) => {
+    if (!userId) return;
     const provider = displayProviders.find((p) => p.id === providerId);
-    if (!provider?.isAvailable) {
-      return;
-    }
-
-    setSelectedProvider(providerId);
-    setConnectionState('connecting');
-    setErrorMessage('');
-
-    try {
-      // In production, this would redirect to OAuth provider
-      // For now, simulate the OAuth flow
-      await simulateOAuthFlow();
-
-      setConnectionState('success');
-
-      // Notify parent window
-      if (window.parent !== window) {
-        window.parent.postMessage(
-          {
-            type: 'wearable_connected',
-            provider: providerId,
-            providerName: providerName,
-          },
-          '*'
-        );
-      }
-
-      // Auto-close after success
-      setTimeout(() => {
-        if (window.parent !== window) {
-          window.parent.postMessage({ type: 'wearable_widget_close' }, '*');
-        }
-      }, 2000);
-    } catch (err) {
-      setConnectionState('error');
-      setErrorMessage(err instanceof Error ? err.message : 'Connection failed');
-    }
+    if (!provider?.isAvailable || connectingProvider !== null) return;
+    connect(providerId);
   };
 
-  // Simulate OAuth flow (in production this would redirect to provider's OAuth page)
-  const simulateOAuthFlow = (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // 90% success rate for simulation
-        if (Math.random() > 0.1) {
-          resolve();
-        } else {
-          reject(new Error('OAuth authorization was cancelled or failed'));
-        }
-      }, 2000);
-    });
-  };
+  if (!userId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-6">
+        <div className="w-full max-w-md rounded-2xl bg-zinc-900/40 border border-white/5 p-10 text-center">
+          <h2 className="text-xl font-medium text-red-400 mb-3">Missing user ID</h2>
+          <p className="text-zinc-400 text-sm">
+            This page must be opened with a <code className="text-zinc-300">?user_id=</code> parameter.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (connectionState === 'success') {
     return (
@@ -116,13 +97,10 @@ function ConnectWidgetPage() {
           <h2 className="text-2xl font-medium text-red-400 mb-3">
             Connection Failed
           </h2>
-          <p className="text-zinc-400 mb-8">{errorMessage}</p>
+          <p className="text-zinc-400 mb-8">{error}</p>
           <Button
             className="w-full bg-zinc-800 hover:bg-zinc-700 text-white border-0"
-            onClick={() => {
-              setConnectionState('idle');
-              setSelectedProvider(null);
-            }}
+            onClick={reset}
           >
             Try Again
           </Button>
@@ -156,13 +134,13 @@ function ConnectWidgetPage() {
         ) : (
           displayProviders.map((provider) => {
             const isConnecting =
-              selectedProvider === provider.id &&
+              connectingProvider === provider.id &&
               connectionState === 'connecting';
 
             return (
               <button
                 key={provider.id}
-                onClick={() => handleConnect(provider.id, provider.name)}
+                onClick={() => handleConnect(provider.id)}
                 disabled={!provider.isAvailable || isConnecting}
                 className={`group relative flex flex-col items-center text-center p-10 rounded-2xl bg-zinc-900/40 border border-white/5 hover:bg-zinc-900/80 hover:border-white/10 transition-all duration-300 ease-out outline-none focus:ring-2 focus:ring-white/20 ${
                   !provider.isAvailable ? 'opacity-50 cursor-not-allowed' : ''
@@ -187,7 +165,7 @@ function ConnectWidgetPage() {
                   {isConnecting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Connecting...
+                      Redirecting to {provider.name}…
                     </>
                   ) : !provider.isAvailable ? (
                     'Coming Soon'
