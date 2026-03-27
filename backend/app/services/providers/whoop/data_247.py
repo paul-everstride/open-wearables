@@ -619,6 +619,7 @@ class Whoop247Data(Base247DataTemplate):
             "hrv_rmssd_milli": score.get("hrv_rmssd_milli"),
             "spo2_percentage": score.get("spo2_percentage"),
             "skin_temp_celsius": score.get("skin_temp_celsius"),
+            "respiratory_rate": score.get("respiratory_rate"),
             "raw": raw_recovery,
         }
 
@@ -655,6 +656,7 @@ class Whoop247Data(Base247DataTemplate):
             ("hrv_rmssd_milli", SeriesType.heart_rate_variability_rmssd),
             ("spo2_percentage", SeriesType.oxygen_saturation),
             ("skin_temp_celsius", SeriesType.skin_temperature),
+            ("respiratory_rate", SeriesType.respiratory_rate),
         ]
 
         for field_name, series_type in metrics:
