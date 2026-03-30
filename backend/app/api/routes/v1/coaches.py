@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 
 from app.database import DbSession
 from app.models.team import Team
@@ -10,8 +10,13 @@ from app.services import coach_service
 router = APIRouter()
 
 
+def _no_cache(response: Response) -> None:
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+
+
 @router.get("/coaches", response_model=list[CoachRead])
-def list_coaches(db: DbSession, _api_key: ApiKeyDep):
+def list_coaches(db: DbSession, _api_key: ApiKeyDep, response: Response):
+    _no_cache(response)
     return coach_service.get_all_coaches(db)
 
 
@@ -21,5 +26,6 @@ def create_coach(payload: CoachCreate, db: DbSession, _api_key: ApiKeyDep):
 
 
 @router.get("/coaches/{coach_email}/teams", response_model=list[TeamRead])
-def get_coach_teams(coach_email: str, db: DbSession, _api_key: ApiKeyDep):
+def get_coach_teams(coach_email: str, db: DbSession, _api_key: ApiKeyDep, response: Response):
+    _no_cache(response)
     return db.query(Team).filter(Team.coach_email == coach_email).all()

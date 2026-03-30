@@ -10,13 +10,10 @@ from app.schemas.team import TeamCreate
 
 
 def get_all_teams(db: Session) -> list[Team]:
-    # Ensure we see the latest committed data (not stale transaction snapshots)
-    db.rollback()
     return db.query(Team).order_by(Team.created_at).all()
 
 
 def get_team(db: Session, team_id: UUID) -> Team | None:
-    db.rollback()
     return db.query(Team).filter(Team.id == team_id).first()
 
 
@@ -113,7 +110,6 @@ def remove_member(db: Session, team_id: UUID, user_id: UUID) -> bool:
 
 
 def get_all_memberships(db: Session) -> list[dict]:
-    db.rollback()
     rows = (
         db.query(UserTeam.user_id, Team.id.label("team_id"), Team.name.label("team_name"), Team.coach_email)
         .join(Team, Team.id == UserTeam.team_id)
