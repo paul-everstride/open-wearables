@@ -169,6 +169,9 @@ class Whoop247Data(Base247DataTemplate):
         # Efficiency percentage
         efficiency = score.get("sleep_efficiency_percentage")
 
+        # Respiratory rate (breaths per minute) – lives in the sleep score, not recovery
+        respiratory_rate = score.get("respiratory_rate")
+
         # Generate UUID for our internal ID (use Whoop ID if it's a valid UUID string)
         internal_id = uuid4()
         if sleep_id:
@@ -185,6 +188,7 @@ class Whoop247Data(Base247DataTemplate):
             "zone_offset": zone_offset,
             "duration_seconds": duration_seconds,
             "efficiency_percent": float(efficiency) if efficiency is not None else None,
+            "respiratory_rate": float(respiratory_rate) if respiratory_rate is not None else None,
             "is_nap": nap,
             "stages": {
                 "deep_seconds": deep_seconds,
@@ -295,6 +299,28 @@ class Whoop247Data(Base247DataTemplate):
             # Rollback is handled by the service/repository or session manager
             # But we should ensure we don't break the entire sync loop
             pass
+
+        # Save respiratory rate as a timeseries data point (WHOOP reports it in sleep, not recovery)
+        resp_rate = normalized_sleep.get("respiratory_rate")
+        if resp_rate is not None and start_dt:
+            try:
+                sample = TimeSeriesSampleCreate(
+                    id=uuid4(),
+                    user_id=user_id,
+                    source=self.provider_name,
+                    recorded_at=start_dt,
+                    series_type_id=get_series_type_id(SeriesType.respiratory_rate),
+                    value=float(resp_rate),
+                )
+                timeseries_service.save_samples(db, [sample])
+            except Exception as e:
+                log_structured(
+                    self.logger,
+                    "warning",
+                    f"Failed to save respiratory rate from sleep: {e}",
+                    provider="whoop",
+                    task="save_sleep_data",
+                )
 
     def load_and_save_sleep(
         self,
