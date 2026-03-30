@@ -75,6 +75,21 @@ def patch_team(team_id: UUID, payload: TeamUpdate, db: DbSession, _api_key: ApiK
     return team
 
 
+@router.put("/teams/{team_id}/rename")
+def rename_team(team_id: UUID, payload: TeamUpdate, db: DbSession, _api_key: ApiKeyDep):
+    """Dedicated rename endpoint to ensure name changes persist."""
+    from sqlalchemy import text
+    if not payload.name:
+        raise HTTPException(status_code=400, detail="name is required")
+    db.execute(text("UPDATE team SET name = :name WHERE id = :tid"), {"name": payload.name.strip(), "tid": str(team_id)})
+    db.commit()
+    db.expire_all()
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return {"id": str(team.id), "name": team.name, "coach_email": team.coach_email}
+
+
 @router.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_team(team_id: UUID, db: DbSession, _api_key: ApiKeyDep):
     team = team_service.get_team(db, team_id)
