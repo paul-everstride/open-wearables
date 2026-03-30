@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.models.team import Team, UserTeam
@@ -49,17 +50,19 @@ def update_team_coach(db: Session, team_id: UUID, coach_email: str) -> Team | No
 
 
 def update_team(db: Session, team_id: UUID, name: str | None = None, coach_email: str | None = None) -> Team | None:
-    """Update team fields (name and/or coach_email)."""
-    team = db.query(Team).filter(Team.id == team_id).first()
-    if not team:
-        return None
+    """Update team fields (name and/or coach_email) using explicit SQL UPDATE."""
+    values: dict = {}
     if name is not None:
-        team.name = name.strip()
+        values["name"] = name.strip()
     if coach_email is not None:
-        team.coach_email = coach_email
+        values["coach_email"] = coach_email
+    if not values:
+        return get_team(db, team_id)
+    db.execute(update(Team).where(Team.id == team_id).values(**values))
     db.commit()
-    db.refresh(team)
-    return team
+    # Expire cached ORM state and re-read from DB
+    db.expire_all()
+    return db.query(Team).filter(Team.id == team_id).first()
 
 
 def get_team_members(db: Session, team_id: UUID) -> list[User]:
