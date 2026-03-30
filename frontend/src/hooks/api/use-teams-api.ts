@@ -22,6 +22,7 @@ export function useTeamsApi() {
   return useQuery({
     queryKey: ['teams'],
     queryFn: () => apiClient.get<TeamRead[]>(API_ENDPOINTS.teams),
+    staleTime: 0,
   });
 }
 
@@ -44,6 +45,7 @@ export function useTeamMemberships() {
   return useQuery({
     queryKey: ['teams', 'members'],
     queryFn: () => apiClient.get<TeamMembershipRead[]>('/api/v1/teams/members'),
+    staleTime: 0,
   });
 }
 
@@ -70,6 +72,7 @@ export function useCoaches() {
   return useQuery({
     queryKey: ['coaches'],
     queryFn: () => apiClient.get<CoachRead[]>('/api/v1/coaches'),
+    staleTime: 0,
   });
 }
 
@@ -78,6 +81,7 @@ export function useCoachTeams(coachEmail: string | null) {
     queryKey: ['coaches', coachEmail, 'teams'],
     queryFn: () => apiClient.get<TeamRead[]>(`/api/v1/coaches/${encodeURIComponent(coachEmail!)}/teams`),
     enabled: !!coachEmail,
+    staleTime: 0,
   });
 }
 
