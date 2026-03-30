@@ -309,10 +309,10 @@ class Whoop247Data(Base247DataTemplate):
                     user_id=user_id,
                     source=self.provider_name,
                     recorded_at=start_dt,
-                    series_type_id=get_series_type_id(SeriesType.respiratory_rate),
-                    value=float(resp_rate),
+                    value=Decimal(str(resp_rate)),
+                    series_type=SeriesType.respiratory_rate,
                 )
-                timeseries_service.save_samples(db, [sample])
+                timeseries_service.bulk_create_samples(db, [sample])
             except Exception as e:
                 log_structured(
                     self.logger,
