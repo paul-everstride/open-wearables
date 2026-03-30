@@ -77,12 +77,16 @@ def patch_team(team_id: UUID, payload: TeamUpdate, db: DbSession, _api_key: ApiK
 
 @router.put("/teams/{team_id}/rename")
 def rename_team(team_id: UUID, payload: TeamUpdate, db: DbSession, _api_key: ApiKeyDep):
-    """Dedicated rename endpoint to ensure name changes persist."""
+    """Dedicated rename endpoint — uses its own connection to bypass session issues."""
     from sqlalchemy import text
+    from app.database import engine
     if not payload.name:
         raise HTTPException(status_code=400, detail="name is required")
-    db.execute(text("UPDATE team SET name = :name WHERE id = :tid"), {"name": payload.name.strip(), "tid": str(team_id)})
-    db.commit()
+    # Use a raw connection outside SQLAlchemy's session management
+    with engine.connect() as conn:
+        conn.execute(text("UPDATE team SET name = :name WHERE id = :tid"), {"name": payload.name.strip(), "tid": str(team_id)})
+        conn.commit()
+    # Read back from the injected session
     db.expire_all()
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
