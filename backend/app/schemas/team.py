@@ -24,6 +24,7 @@ class TeamRead(BaseModel):
 
 
 class TeamUpdate(BaseModel):
+    name: str | None = None
     coach_email: str | None = None
 
 

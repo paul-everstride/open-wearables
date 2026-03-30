@@ -48,6 +48,20 @@ def update_team_coach(db: Session, team_id: UUID, coach_email: str) -> Team | No
     return team
 
 
+def update_team(db: Session, team_id: UUID, name: str | None = None, coach_email: str | None = None) -> Team | None:
+    """Update team fields (name and/or coach_email)."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        return None
+    if name is not None:
+        team.name = name.strip()
+    if coach_email is not None:
+        team.coach_email = coach_email
+    db.commit()
+    db.refresh(team)
+    return team
+
+
 def get_team_members(db: Session, team_id: UUID) -> list[User]:
     return (
         db.query(User)
