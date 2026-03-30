@@ -17,7 +17,7 @@ class User(BaseDbModel):
     last_name: Mapped[str_100 | None]
     email: Mapped[email | None]
 
-    external_user_id: Mapped[Unique[str_255] | None]
+    external_user_id: Mapped[str_255 | None]
 
     personal_record: Mapped["PersonalRecord | None"] = relationship(
         back_populates="user",
