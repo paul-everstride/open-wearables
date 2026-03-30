@@ -1,8 +1,10 @@
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
+from sqlalchemy import update as sa_update
 
 from app.database import DbSession
+from app.models.team import Team
 from app.schemas.team import TeamCreate, TeamRead, TeamMembershipRead, TeamUpdate
 from app.schemas.user import UserRead
 from app.services import ApiKeyDep
@@ -53,7 +55,20 @@ def add_team_member(team_id: UUID, user_id: UUID, db: DbSession, _api_key: ApiKe
 
 @router.patch("/teams/{team_id}", response_model=TeamRead)
 def patch_team(team_id: UUID, payload: TeamUpdate, db: DbSession, _api_key: ApiKeyDep):
-    team = team_service.update_team(db, team_id, name=payload.name, coach_email=payload.coach_email)
+    values: dict = {}
+    if payload.name is not None:
+        values["name"] = payload.name.strip()
+    if payload.coach_email is not None:
+        values["coach_email"] = payload.coach_email
+    if values:
+        stmt = sa_update(Team).where(Team.id == team_id).values(**values)
+        result = db.execute(stmt)
+        db.commit()
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Team not found")
+    # Re-read after commit
+    db.expire_all()
+    team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
     return team
