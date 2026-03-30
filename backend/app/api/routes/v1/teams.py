@@ -55,18 +55,19 @@ def add_team_member(team_id: UUID, user_id: UUID, db: DbSession, _api_key: ApiKe
 
 @router.patch("/teams/{team_id}", response_model=TeamRead)
 def patch_team(team_id: UUID, payload: TeamUpdate, db: DbSession, _api_key: ApiKeyDep):
-    values: dict = {}
+    from sqlalchemy import text
+    sets = []
+    params: dict = {"tid": str(team_id)}
     if payload.name is not None:
-        values["name"] = payload.name.strip()
+        sets.append("name = :name")
+        params["name"] = payload.name.strip()
     if payload.coach_email is not None:
-        values["coach_email"] = payload.coach_email
-    if values:
-        stmt = sa_update(Team).where(Team.id == team_id).values(**values)
-        result = db.execute(stmt)
+        sets.append("coach_email = :email")
+        params["email"] = payload.coach_email
+    if sets:
+        sql = text(f"UPDATE team SET {', '.join(sets)} WHERE id = :tid")
+        db.execute(sql, params)
         db.commit()
-        if result.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Team not found")
-    # Re-read after commit
     db.expire_all()
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
