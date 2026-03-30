@@ -313,7 +313,9 @@ class Whoop247Data(Base247DataTemplate):
                     series_type=SeriesType.respiratory_rate,
                 )
                 timeseries_service.bulk_create_samples(db, [sample])
+                db.commit()
             except Exception as e:
+                db.rollback()
                 log_structured(
                     self.logger,
                     "warning",
