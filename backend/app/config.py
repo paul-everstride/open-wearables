@@ -74,8 +74,8 @@ class Settings(BaseSettings):
     sleep_end_gap_minutes: int = 120  # 2 hours
 
     # SYNC SETTINGS
-    sync_interval_seconds: int = 3600  # Default: 1 hour (3600 seconds)
-    sleep_sync_interval_seconds: int = 3600  # Default: 1 hour (3600 seconds)
+    sync_interval_seconds: int = 36000  # Default: 10 hours (36000 seconds) — reduced from 1h to cut Railway costs
+    sleep_sync_interval_seconds: int = 36000  # Default: 10 hours (36000 seconds) — reduced from 1h to cut Railway costs
 
     # SUUNTO OAUTH SETTINGS
     suunto_client_id: str | None = None
