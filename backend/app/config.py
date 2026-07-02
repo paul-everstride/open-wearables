@@ -123,6 +123,16 @@ class Settings(BaseSettings):
     email_from_address: str | None = None
     email_from_name: str = "Open Wearables"
     frontend_url: str = "http://localhost:3000"
+    # Hostnames (and their subdomains) that OAuth redirect_uri may point to.
+    # Prevents an open-redirect where an attacker sends a user through a real
+    # provider login and then bounces them to a phishing site.
+    oauth_allowed_redirect_hosts: list[str] = [
+        "localhost",
+        "127.0.0.1",
+        "everstride.fit",  # covers app./connect./planner. subdomains
+        # legacy Railway frontend host — keep until fully migrated to connect.everstride.fit
+        "frontend-production-d9de.up.railway.app",
+    ]
     invitation_expire_days: int = 7
     email_max_retries: int = 5
 

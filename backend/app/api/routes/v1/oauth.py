@@ -1,9 +1,11 @@
 from typing import Annotated
+from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 
+from app.config import settings
 from app.database import DbSession
 from app.integrations.celery.tasks import historical_backfill, start_garmin_full_backfill, sync_vendor_data
 from app.schemas import (
@@ -21,6 +23,25 @@ from app.services.providers.factory import ProviderFactory
 router = APIRouter()
 factory = ProviderFactory()
 settings_service = ProviderSettingsService()
+
+
+def _is_allowed_redirect(redirect_uri: str) -> bool:
+    """Only permit redirects to an allowlisted host (or its subdomains).
+
+    Guards against an open redirect: without this, an attacker could send a
+    victim through the real provider login and then bounce them to a phishing
+    site via a crafted redirect_uri.
+    """
+    try:
+        parsed = urlparse(redirect_uri)
+    except ValueError:
+        return False
+    if parsed.scheme not in ("http", "https"):
+        return False
+    host = (parsed.hostname or "").lower()
+    if not host:
+        return False
+    return any(host == allowed or host.endswith(f".{allowed}") for allowed in settings.oauth_allowed_redirect_hosts)
 
 
 def get_oauth_strategy(provider: ProviderName) -> BaseProviderStrategy:
@@ -46,6 +67,12 @@ def authorize_provider(
 
     Returns authorization URL where user should be redirected to log in.
     """
+    if redirect_uri is not None and not _is_allowed_redirect(redirect_uri):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="redirect_uri is not an allowed destination",
+        )
+
     strategy = get_oauth_strategy(provider)
 
     assert strategy.oauth
@@ -103,8 +130,9 @@ def oauth_callback(
         provider=provider.value,
     )
 
-    # If a specific redirect_uri was requested (e.g. by frontend), redirect there
-    if oauth_state.redirect_uri:
+    # If a specific redirect_uri was requested (e.g. by frontend), redirect there —
+    # but only if it is still an allowlisted destination (defense in depth).
+    if oauth_state.redirect_uri and _is_allowed_redirect(oauth_state.redirect_uri):
         return RedirectResponse(url=oauth_state.redirect_uri, status_code=303)
 
     # Otherwise, redirect to internal success page
